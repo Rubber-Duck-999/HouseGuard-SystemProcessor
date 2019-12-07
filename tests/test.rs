@@ -8,6 +8,6 @@ use std::process::Command;
 #[test]
 fn runs_without_arguments()
 {
-    let mut cmd = Command::cargo_bin("exeSystemProcessor").unwrap();
+    let mut cmd = Command::cargo_bin("/bin/ls").unwrap();
     cmd.assert().success();
 }
