@@ -8,6 +8,11 @@ use psutil::process::Process;
 
 use std::process::Command;
 
+pub fn add(a: i32, b: i32) -> i32 
+{
+    a + b
+}
+
 struct Component
 {
     _name: String,
@@ -34,6 +39,8 @@ impl Processes
         self.component_map.insert(self.id_key, component);  // inserting moves `node`
         self.id_key += 1;
     }
+    
+
 
 
     pub fn ps_list(&mut self)
