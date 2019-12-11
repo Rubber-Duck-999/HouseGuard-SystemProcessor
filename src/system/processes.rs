@@ -8,10 +8,6 @@ use psutil::process::Process;
 
 use std::process::Command;
 
-pub fn add(a: i32, b: i32) -> i32 
-{
-    a + b
-}
 
 struct Component
 {
@@ -40,7 +36,10 @@ impl Processes
         self.id_key += 1;
     }
     
-
+    fn clearMap(&mut self)
+    {
+        self.component_map.clear();
+    }
 
 
     pub fn ps_list(&mut self)
@@ -72,7 +71,7 @@ impl Processes
         for p in &psutil::process::all().unwrap()
         {
             let mut cmd = p.cmdline().unwrap().unwrap_or_else(|| format!("[{}]", p.comm));
-            if(cmd.contains(component))
+            if cmd.contains(component)
             {
                 warn!("Found program and listing details");
                 warn!("{:>5} {:^5} {:>8.2} {:>8.2} {:.100}",
@@ -106,13 +105,9 @@ impl Processes
     pub fn start_process(&mut self, component:&str)
     {
         debug!("Starting process : {}", component);
-
         let status = Command::new("sh")
                              .arg(component)
-                             .status();
-                             //.spawn();
-
-        debug!("Process : {} exited with: {:?} ", component, status);
+                             .spawn();
     }
 
     pub fn kill_component(&mut self, component:&str, restart:bool) -> bool
@@ -142,7 +137,7 @@ impl Processes
         return true;
     }
 
-    fn kill_main_component(&mut self, component:&str)
+    pub fn kill_main_component(&mut self, component:&str)
     {
         let mut pid:i32 = 0;
         let mut component_vec: Vec<i32> = Vec::new();

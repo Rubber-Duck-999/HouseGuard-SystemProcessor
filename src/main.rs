@@ -52,13 +52,13 @@ fn main()
     process_check.start_process(system::constants::FAULT_HANDLER_EXE);
     let mut found = process_check.kill_component(system::constants::FAULT_HANDLER_EXE, false);
 
-    let mut channel = rabbitmq::interaction::SessionRabbitmq { ..Default::default() };
+    //let mut channel = rabbitmq::interaction::SessionRabbitmq { ..Default::default() };
 
     trace!("Declaring consumer...");
-    channel.Consume();
+    //channel.Consume();
 
     trace!("Declaring publish...");
-    channel.publish(rabbitmq::types::ISSUE_NOTICE, system::constants::COMPONENT_NAME);
+    //channel.publish(rabbitmq::types::ISSUE_NOTICE, system::constants::COMPONENT_NAME);
 
     process::exit(0);
 }
