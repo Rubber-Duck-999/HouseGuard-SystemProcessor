@@ -3,12 +3,12 @@ pipeline {
     stages {
         stage('Build') {
             steps {
-                cargo build
+                sh "cargo build"
             }
         }
         stage('Test') {
             steps {
-                cargo test
+                sh "cargo test"
             }
         }
         stage('Deploy') {
@@ -28,15 +28,15 @@ pipeline {
         }
         stage("Vulnerabilities Test") {
           steps {
-            cargo install --force cargo-audit
-            cargo generate-lockfile
-            cargo audit
+            sh "cargo install --force cargo-audit"
+            sh "cargo generate-lockfile"
+            sh "cargo audit"
           }
         }
         stage("Lint") {
           steps {
-            rustup component add clippy
-            cargo clippy
+            sh "rustup component add clippy"
+            sh "cargo clippy"
           }
         }
     }
