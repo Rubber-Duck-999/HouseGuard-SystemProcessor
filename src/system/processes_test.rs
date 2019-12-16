@@ -37,6 +37,7 @@ mod tests
         let mut test_runner_sh = "runTest.sh";
         let mut found = process_check.ps_find(test_runner_sh);
         process_check.kill_main_component(test_runner_sh);
+        found = process_check.ps_find(test_runner_sh);
         assert_eq!(found, 0); 
     }
     
