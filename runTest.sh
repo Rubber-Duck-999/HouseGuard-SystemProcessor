@@ -1,2 +1,8 @@
+#!/bin/sh
+
 echo "Run"
-sleep 10
+while true
+do
+    echo "Run"
+    sleep 0.5
+done

@@ -8,7 +8,7 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh "cargo test"
+                sh "cargo test -- --test-threads=1
             }
         }
         stage('Deploy') {
