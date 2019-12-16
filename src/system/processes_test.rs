@@ -13,15 +13,7 @@ mod tests
     fn test_start_runner() 
     {
         let mut process_check = Processes::new();
-        let dir = env::current_dir().unwrap();
-        println!("Display path : {}", dir.display());
-        let paths = fs::read_dir(dir).unwrap();
-
-        for path in paths 
-        {
-            println!("Name: {}", path.unwrap().path().display())
-        }
-        let mut test_runner_sh = "../runTest.sh";
+        let mut test_runner_sh = "runTest.sh";
         process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
         assert_eq!(found, 1);
@@ -31,7 +23,7 @@ mod tests
     fn test_start_two_runner() 
     {
         let mut process_check = Processes::new();
-        let mut test_runner_sh = "../runTest.sh";
+        let mut test_runner_sh = "runTest.sh";
         process_check.start_process(test_runner_sh);
         process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
@@ -42,7 +34,7 @@ mod tests
     fn kill_previous_three()
     {
         let mut process_check = Processes::new();
-        let mut test_runner_sh = "../runTest.sh";
+        let mut test_runner_sh = "runTest.sh";
         let mut found = process_check.ps_find(test_runner_sh);
         process_check.kill_main_component(test_runner_sh);
         assert_eq!(found, 0); 
@@ -52,7 +44,7 @@ mod tests
     fn test_start_runner_duplicate() 
     {
         let mut process_check = Processes::new();
-        let mut test_runner_sh = "../runTest.sh";
+        let mut test_runner_sh = "runTest.sh";
         process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
         process_check.kill_duplicate_component(test_runner_sh);
