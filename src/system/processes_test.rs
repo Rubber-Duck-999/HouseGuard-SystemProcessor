@@ -1,4 +1,5 @@
 use crate::system::processes::*;
+use std::env;
 
 
 #[cfg(test)]
@@ -12,6 +13,8 @@ mod tests
     fn test_start_runner() 
     {
         let mut process_check = Processes::new();
+        let dir = env::current_dir().unwrap();
+        println!("{}", dir);
         let mut test_runner_sh = "../runTest.sh";
         process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
