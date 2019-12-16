@@ -14,7 +14,7 @@ mod tests
     {
         let mut process_check = Processes::new();
         let dir = env::current_dir().unwrap();
-        println!("{}", dir);
+        println!("{}", dir.display());
         let mut test_runner_sh = "../runTest.sh";
         process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
