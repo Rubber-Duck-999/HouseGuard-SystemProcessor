@@ -35,11 +35,5 @@ pipeline {
             sh "cargo audit"
           }
         }
-        stage("Lint") {
-          steps {
-            sh "rustup component add clippy"
-            sh "cargo clippy"
-          }
-        }
     }
 }
