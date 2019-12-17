@@ -18,12 +18,13 @@ pipeline {
         }
         stage("check code style") {
           steps {
-              chmod "+x ./check-code-style.sh"
-              sh "check-code-style.sh"
+              sh "chmod +x ./check-code-style.sh"
+              sh "./check-code-style.sh"
           }
         }
         stage("Integration") {
           steps {
+            sh "chmod +x ./runIntegrationTest.sh"
             sh "./runIntegrationTest.sh"
           }
         }
