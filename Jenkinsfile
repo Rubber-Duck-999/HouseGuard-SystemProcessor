@@ -18,7 +18,8 @@ pipeline {
         }
         stage("check code style") {
           steps {
-              sh "./check-code-style.sh"
+              chmod +x "./check-code-style.sh"
+              sh "check-code-style.sh"
           }
         }
         stage("Integration") {
