@@ -146,9 +146,8 @@ impl SessionRabbitmq
 
     pub fn Consume(&mut self)
     {
-        let queue_name: &str = "";
         warn!("Beginning consumption");
-        self.declare_queue(&queue_name);
+        self.declare_queue("");
 
         self._channel.exchange_declare(
             "topics",
@@ -162,28 +161,23 @@ impl SessionRabbitmq
         ).unwrap();
 
         self._channel.queue_bind(
-            queue_name,
+            "",
             types::EXCHANGE_NAME,
-            types::POWER_NOTICE,
+            types::REQUEST_POWER,
             false,
             Table::new(),
         ).unwrap();
 
-        let mut expected:bool = true;
 
-        while expected
+        warn!("[{} Consumer ] Created.", "");
+    }
+
+    pub fn ConsumeGet(&mut self)
+    {
+        for get_result in self._channel.basic_get("", false)
         {
-            for get_result in self._channel.basic_get(queue_name, false)
-            {
-                warn!("Received: {:?}", String::from_utf8_lossy(&get_result.body));
-                get_result.ack();
-                if(String::from_utf8_lossy(&get_result.body) == "50")
-                {
-                    expected = false;
-                }
-            }
+            warn!("Received: {:?}", String::from_utf8_lossy(&get_result.body));
+            get_result.ack();
         }
-
-        warn!("[{} Consumer ] Started.", queue_name);
     }
 }

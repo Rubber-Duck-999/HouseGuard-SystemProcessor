@@ -154,7 +154,10 @@ impl Processes
         for i in component_vec
         {
             warn!("Killing duplicate : {} pid : {}", component, i);
-            self.kill_component_pid(i);
+            if self.kill_component_pid(i)
+            {
+                self.clearMap();
+            }
         }
     }
 
@@ -179,17 +182,23 @@ impl Processes
         for i in component_vec
         {
             warn!("Killing duplicate : {} pid : {}", component, i);
-            self.kill_component_pid(i);
+            if self.kill_component_pid(i) 
+            {
+                self.clearMap();
+            }
         }
     }
 
-    pub fn kill_component_pid(&mut self, component:i32)
+    pub fn kill_component_pid(&mut self, component:i32) -> bool
     {
+        let mut error_present:bool = false;
         let process = Process::new(component).unwrap();
 
         if let Err(error) = process.kill()
         {
             println!("Failed to kill process: {}.", error);
+            error_present = true;
         };
+        return error_present;
     }
 }

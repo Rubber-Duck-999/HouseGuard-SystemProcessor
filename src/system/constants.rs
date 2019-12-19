@@ -6,7 +6,9 @@ pub const DATABASE_MANAGER:&str = "DBM";
 pub const USER_PANEL:&str = "UP";
 pub const COMPONENT_NAME:&str = "SYP";
 
-pub const COMPONENT_EXE:&str = "exeSystemProcessor";
-pub const COMPONENT_SIM:&str = "python3 SYPSim.py";
-pub const FAULT_HANDLER_EXE:&str = "runFaultHandler.sh";
-pub const USER_PANEL_EXE:&str = "runUserPanel.sh";
+pub const FH_EXE:&str = "runFH.sh";
+pub const UP_EXE:&str = "runUP.sh";
+pub const DBM_EXE:&str = "runDBM.sh";
+pub const NAC_EXE:&str = "runUNAC.sh";
+pub const CM_EXE:&str = "runCM.sh";
+pub const EVM_EXE:&str = "runEVM.sh";
