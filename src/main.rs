@@ -22,65 +22,113 @@ extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
 
-fn start(component: &str) -> bool
+struct Control
 {
-    let mut process = system::processes::Processes::new();
-    let mut exists = Path::new(component).exists();
-    if exists
+    _component_map: HashMap<u16, String>,
+    _process: system::processes::Processes,
+    _channel: rabbitmq::interaction::SessionRabbitmq,
+    _shutdown: bool,
+    _key: 16,
+}
+
+impl Control
+{
+    pub fn new() -> Control 
     {
-        println!("The component file does exist: {}", 
-            Path::new(component).exists());
-        process.start_process(component);
-        let mut found = process.ps_find(component);
-        let mut restart = true;
-        warn!("We have found {} processes for {}", found, component);
-        let mut attempts = 0;
-        while found != 1 && attempts < 3 
+        Control 
         {
-            process.kill_component(component, restart);
-            found = process.ps_find(component);
-            attempts = attempts + 1;
+            _component_map: HashMap::new(),
+            _process = system::processes::Processes::new(),
+            _channel = rabbitmq::interaction::SessionRabbitmq { ..Default::default() };
+            _shutdown: false,
+            _key: 0,
         }
     }
-    return exists;
-}
 
-fn control_process() 
-{
-    warn!(
-        "Initialising System Processor Component = {}",
-        system::constants::COMPONENT_NAME
-    );
-
-    let mut shutdown:bool = false;
-    let mut channel = rabbitmq::interaction::SessionRabbitmq { ..Default::default() };
-    
-    let mut valid = start(system::constants::FH_EXE);
-    start(system::constants::UP_EXE);
-    start(system::constants::DBM_EXE);
-    start(system::constants::NAC_EXE);
-    start(system::constants::CM_EXE);
-    start(system::constants::EVM_EXE);
-    let issue_pre = rabbitmq::types::issue_notice 
-            { _severity: rabbitmq::types::START_UP_FAILURE_SEVERITY
-                , _component: "ALL".to_string(), _action: 0};
-    let issue = serde_json::to_string(&issue_pre).unwrap();
-    trace!("Serialized: {}", issue);
-    channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);  
-
-
-    trace!("Declaring consumer...");
-    channel.Consume();
-    while ! shutdown
+    pub fn add_components_control(component: &str)
     {
-        channel.ConsumeGet();
-        let mut event:&str = "{HELLO}";
-        channel.publish(rabbitmq::types::EVENT_SYP, event);
+        trace!("Adding found component to control map");
+        self.component_map.insert(self._key, component); // inserting moves `node`
+        self.id_key += 1;
+        if ! start(compnent)
+        {
+            warn!("The component will not start up, please debug {}", component);
+        }
     }
-    trace!("Sending shutdown event...");
-    let mut event:&str = "{HELLO}";
-    channel.publish(rabbitmq::types::EVENT_SYP, event);  
+
+    fn clear_map(&mut self) 
+    {
+        self.component_map.clear();
+    }
+
+    fn start&mut self, component: &str) -> bool
+    {
+        //let mut process = system::processes::Processes::new();
+        let mut exists = Path::new(component).exists();
+        if exists
+        {
+            println!("The component file does exist: {}", 
+                Path::new(component).exists());
+            self._process.start_process(component);
+            let mut found = self._process.ps_find(component);
+            let mut restart = true;
+            warn!("We have found {} processes for {}", found, component);
+            let mut attempts = 0;
+            while found != 1 && attempts < 3 
+            {
+                self._process.kill_component(component, restart);
+                found = self._process.ps_find(component);
+                attempts = attempts + 1;
+            }
+            if found != 1 
+            {
+                let issue_pre = rabbitmq::types::issue_notice
+                { 
+                    severity: rabbitmq::types::START_UP_FAILURE_SEVERITY, 
+                    component: component.to_string(), 
+                    action: 0
+                };
+        
+                let issue = serde_json::to_string(&issue_pre).unwrap();
+                trace!("Serialized: {}", issue);
+                channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue); 
+                exists = false;
+            }
+        }
+        return exists;
+    }
+
+    fn request_check(message:&mut types::request_power)
+    {
+
+    }
+
+    fn control_loop() 
+    {
+        trace!("Declaring consumer...");
+        channel.Consume();
+        let mut message = rabbitmq::types::request_power
+        {
+            power: rabbitmq::types::SHUTDOWN.to_string(),
+            severity: 0,
+            component: "None".to_string()
+        };
+
+        while ! shutdown
+        {
+            if channel.ConsumeGet(&mut message)
+            {
+                request_check(&mut message, &mut channel);
+            }
+            let mut event:&str = "{HELLO}";
+            channel.publish(rabbitmq::types::EVENT_SYP, event);
+        }
+        trace!("Sending shutdown event...");
+        let mut event:&str = "{HELLO}";
+        channel.publish(rabbitmq::types::EVENT_SYP, event);  
+    }
 }
+
 
 fn main() 
 {
@@ -95,7 +143,9 @@ fn main()
         .version("0.0.1")
         .about("The hearbeat and starter for HouseGuard.");
 
-    control_process();
+    let mut control = Control::new();
+    Control.add_components_control()
+    Control.control_loop(system::constants::FH_EXE);
 
     process::exit(0);
 }

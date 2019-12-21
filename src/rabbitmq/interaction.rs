@@ -169,27 +169,30 @@ impl SessionRabbitmq
         warn!("[{} Consumer ] Created.", "");
     }
 
-    pub fn ConsumeGet(&mut self) -> bool
+    pub fn ConsumeGet(&mut self, message:&mut types::request_power) -> bool
     {
+        let mut valid:bool = false
         for get_result in self._channel.basic_get("", false) 
         {
-            warn!("Received: {:?}", String::from_utf8_lossy(&get_result.body));
+            //warn!("Received: {:?}", String::from_utf8_lossy(&get_result.body));
             if get_result.reply.routing_key.contains(types::REQUEST_POWER)
             {
                 warn!("Received {}", types::REQUEST_POWER);
-                /*
+                
                 if String::from_utf8_lossy(&get_result.body).contains("power") &&
                    String::from_utf8_lossy(&get_result.body).contains("severity") &&
                    String::from_utf8_lossy(&get_result.body).contains("component")
                 {
-                    let deserialized: types::request_power = serde_json::from_str(
-                        &String::from_utf8_lossy(&get_result.body)
-                    ).unwrap();
-                    //warn!("Deserialized: {:?}", deserialized);
-                }*/
+                    *message = serde_json::from_str(
+                        &String::from_utf8_lossy(&get_result.body)).unwrap();
+                    if message.power != ""
+                    {
+                        valid = true;
+                    }
+                }
             }
             get_result.ack();
         }
-        return true;
+        return valid;
     }
 }
