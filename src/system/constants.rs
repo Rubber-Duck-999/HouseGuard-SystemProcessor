@@ -5,6 +5,7 @@ pub const FAULT_HANDLER: &str = "FH";
 pub const DATABASE_MANAGER: &str = "DBM";
 pub const USER_PANEL: &str = "UP";
 pub const COMPONENT_NAME: &str = "SYP";
+pub const RABBITMQ: &str = "RMQ";
 
 pub const FH_EXE: &str = "runFH.sh";
 pub const UP_EXE: &str = "runUP.sh";

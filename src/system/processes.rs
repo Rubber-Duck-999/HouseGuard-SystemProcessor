@@ -67,6 +67,24 @@ impl Processes
         }
     }
 
+    pub fn find(&mut self, component: &str) ->bool
+    {
+        let mut found:bool = false;
+
+        for p in &psutil::process::all().unwrap() 
+        {
+            let mut cmd = p
+                .cmdline()
+                .unwrap()
+                .unwrap_or_else(|| format!("[{}]", p.comm));
+            if cmd.contains(component) 
+            {
+                found = true;
+            }
+        }
+        return found;
+    }
+
     pub fn ps_find(&mut self, component: &str) -> u16 
     {
         let mut amount_found: u16 = 0;

@@ -30,6 +30,8 @@ queue_name = result.method.queue
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_event)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_issue)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_failure)
+text = '{ "power":"shutdown", "severity":5, "component": "DBM" }'
+channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
 print("Waiting for Messages")
 
 

@@ -63,18 +63,48 @@ impl Control
         self._component_map.clear();
     }
 
-    fn switch_names(&mut self, component_name: &str) 
+    fn switch_names(&mut self, component_name:&mut String) -> bool
     {
-        let result = component_name;
-        let name = match result
+        let mut valid:bool = true;
+        if component_name == system::constants::CAMERA_MONITOR
         {
-            system::constants::CAMERA_MONITOR => {
-                compoment_name = system::constants::CM_EXE;
-            }
-            _ => {
-                component = system::constants::FH_EXE;
-            }
-        };
+            debug!("CM Found");
+        }
+        else if component_name == system::constants::NETWORK_ACCESS_CONTROLLER
+        {
+            debug!("NAC Found");
+        }
+        else if component_name == system::constants::ENVIRONMENT_MANAGER
+        {
+            debug!("EVM Found");
+        }
+        else if component_name == system::constants::FAULT_HANDLER
+        {
+            debug!("FH Found");
+        }
+        else if component_name == system::constants::DATABASE_MANAGER
+        {
+            debug!("DBM Found");
+        }
+        else if component_name == system::constants::USER_PANEL
+        {
+            debug!("UP Found");
+        }
+        else if component_name == system::constants::COMPONENT_NAME
+        {
+            debug!("SYP Found");
+            self._shutdown = true;
+        }
+        else if component_name == system::constants::RABBITMQ
+        {
+            debug!("NAC Found");
+        }
+        else
+        {
+            debug!("Not sure what this is: {}", component_name);
+            valid = false;
+        }
+        return valid;
     }
 
     fn start(&mut self, component: &str, restart: bool) -> bool
@@ -125,19 +155,54 @@ impl Control
                 found = found + 1;
             }
         }
-        if ((found < 1) && (message.power == rabbitmq::types::RESTART))
+        if self.switch_names(&mut message.component)
         {
-            self.switch_names(&mut message.compoment);
-            self.add_components_control(&mut message.component,
-                                        rabbitmq::types::RESTART_SET);
+            if ((found < 1) && (message.power == rabbitmq::types::RESTART))
+            {
+                self.add_components_control(&mut message.component,
+                                            rabbitmq::types::RESTART_SET);
+            }
+            else if message.power == rabbitmq::types::SHUTDOWN
+            {
+                self.add_components_control(&mut message.component,
+                                            rabbitmq::types::SHUTDOWN_SET);
+            }
         }
-        else if message.power == rabbitmq::types::SHUTDOWN
+        else
         {
-            self.switch_names(&mut message.compoment);
-            self.add_components_control(&mut message.component,
-                                        rabbitmq::types::SHUTDOWN_SET);
+            let event = rabbitmq::types::EventSyp
+            { 
+                severity: 2, 
+                error: "Component Not Found- Request.Power".to_string(),
+                time: "14:00:00".to_string(),
+                component: system::constants::COMPONENT_NAME.to_string()
+            };
+            let serialized = serde_json::to_string(&event).unwrap();
+            warn!("Serialized: {}", serialized);
+            self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
         }
 
+    }
+
+    fn check_process(&mut self)
+    {
+        let mut found:u8 = 0;
+        for (key, val) in self._component_map.iter() 
+        {
+            debug!("key: {}, name: {}", key, val);
+            if ! self._process.find(val)
+            {
+                let failure = rabbitmq::types::FailureComponent
+                { 
+                    time: "14:00:00".to_string(),
+                    type_of_failure: "Component died".to_string(),
+                    severity: rabbitmq::types::RUNTIME_FAILURE
+                };
+                let serialized = serde_json::to_string(&failure).unwrap();
+                warn!("Serialized: {}", serialized);
+                self._channel.publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
+            }
+        }
     }
 
     fn control_loop(&mut self) 
@@ -157,8 +222,7 @@ impl Control
             {
                 self.request_check(&mut message);
             }
-            let mut event:&str = "{HELLO}";
-            self._channel.publish(rabbitmq::types::EVENT_SYP, event);
+            self.check_process();
         }
         trace!("Sending shutdown event...");
         let mut event:&str = "{HELLO}";
@@ -181,7 +245,8 @@ fn main()
         .about("The hearbeat and starter for HouseGuard.");
 
     let mut control = Control::new();
-    /*control.add_components_control(system::constants::FH_EXE, 
+    /*
+    control.add_components_control(system::constants::FH_EXE, 
                                     rabbitmq::types::RESTART_SET);*/
     control.control_loop();
 
