@@ -169,9 +169,9 @@ impl SessionRabbitmq
         warn!("[{} Consumer ] Created.", "");
     }
 
-    pub fn ConsumeGet(&mut self, message:&mut types::request_power) -> bool
+    pub fn ConsumeGet(&mut self, message:&mut types::RequestPower) -> bool
     {
-        let mut valid:bool = false
+        let mut valid:bool = false;
         for get_result in self._channel.basic_get("", false) 
         {
             //warn!("Received: {:?}", String::from_utf8_lossy(&get_result.body));

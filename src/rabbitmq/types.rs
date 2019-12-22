@@ -8,9 +8,12 @@ pub const FAILURE_COMPONENT: &str = "Failure.Component";
 pub const START_UP_FAILURE_SEVERITY: u16 = 3;
 pub const RABBITMQ_SEVERITY: u16 = 6;
 pub const SHUTDOWN: &str = "shutdown";
+pub const RESTART: &str = "restart";
+pub const RESTART_SET: bool = true;
+pub const SHUTDOWN_SET: bool = false;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct request_power 
+pub struct RequestPower 
 {
     pub power: String,
     pub severity: u16,
@@ -18,7 +21,7 @@ pub struct request_power
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct issue_notice
+pub struct IssueNotice
 {
     pub severity: u16,
     pub component: String,
@@ -26,7 +29,7 @@ pub struct issue_notice
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct event_syp
+pub struct EventSyp
 {
     pub severity: u16,
     pub error: String,
@@ -35,7 +38,7 @@ pub struct event_syp
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct failure_component
+pub struct FailureComponent
 {
     pub time: String,
     pub type_of_failure: u16,
