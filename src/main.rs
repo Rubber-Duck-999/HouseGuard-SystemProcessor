@@ -65,7 +65,7 @@ impl Control
 
     fn switch_names(&mut self, component_name:&mut String) -> bool
     {
-        let mut valid:bool = true;
+        let mut valid:bool = false;
         if component_name == system::constants::CAMERA_MONITOR
         {
             debug!("CM Found");
@@ -110,6 +110,7 @@ impl Control
     fn start(&mut self, component: &str, restart: bool) -> bool
     {
         let mut exists = Path::new(component).exists();
+        warn!("Looking for {}, exist? {}", component, exists);
         if exists
         {
             debug!("The component file does exist: {}", 
@@ -140,6 +141,13 @@ impl Control
             }
         }
         return exists;
+    }
+    
+    fn send_event(&mut self, message:& rabbitmq::types::EventSyp)
+    {
+        warn!("Publishing a event message about: {}", message.error);
+        let serialized = serde_json::to_string(&message).unwrap();
+        self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
     }
 
     fn request_check(&mut self, message:&mut rabbitmq::types::RequestPower)
@@ -177,9 +185,7 @@ impl Control
                 time: "14:00:00".to_string(),
                 component: system::constants::COMPONENT_NAME.to_string()
             };
-            let serialized = serde_json::to_string(&event).unwrap();
-            warn!("Serialized: {}", serialized);
-            self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
+            self.send_event(&event);
         }
 
     }
@@ -199,7 +205,7 @@ impl Control
                     severity: rabbitmq::types::RUNTIME_FAILURE
                 };
                 let serialized = serde_json::to_string(&failure).unwrap();
-                warn!("Serialized: {}", serialized);
+                warn!("Publishing a failure message: {}", serialized);
                 self._channel.publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
             }
         }
@@ -225,15 +231,21 @@ impl Control
             self.check_process();
         }
         trace!("Sending shutdown event...");
-        let mut event:&str = "{HELLO}";
-        self._channel.publish(rabbitmq::types::EVENT_SYP, event);  
+        let event = rabbitmq::types::EventSyp
+        { 
+            severity: 6, 
+            error: "Component to be shutdown".to_string(),
+            time: "14:00:00".to_string(),
+            component: system::constants::COMPONENT_NAME.to_string()
+        };
+        self.send_event(&event); 
     }
 }
 
 
 fn main() 
 {
-    simple_logger::init_with_level(Level::Trace).unwrap();
+    simple_logger::init_with_level(Level::Info).unwrap();
 
     if log_enabled!(Level::Debug) 
     {
@@ -245,8 +257,8 @@ fn main()
         .about("The hearbeat and starter for HouseGuard.");
 
     let mut control = Control::new();
-    /*
-    control.add_components_control(system::constants::FH_EXE, 
+    
+    /*control.add_components_control(system::constants::FH_EXE, 
                                     rabbitmq::types::RESTART_SET);*/
     control.control_loop();
 

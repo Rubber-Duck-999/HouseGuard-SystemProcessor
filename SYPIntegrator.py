@@ -37,8 +37,8 @@ print("Waiting for Messages")
 
 def callback(ch, method, properties, body):
     print(" [x] %r:%r" % (method.routing_key, body))
-    time.sleep(1)
-    text = '{ "power":"shutdown", "severity":5, "component": "DBM" }'
+    time.sleep(5)
+    text = '{ "power":"shutdown", "severity":5, "component": "SYP" }'
     channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
 
 channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)

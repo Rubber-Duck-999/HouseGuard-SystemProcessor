@@ -132,7 +132,7 @@ impl Processes
     pub fn start_process(&mut self, component: &str) 
     {
         debug!("Starting process : {}", component);
-        let status = Command::new("sh").arg(component).spawn();
+        //let status = Command::new("sh").arg(component).spawn();
     }
 
     pub fn kill_component(&mut self, component: &str, restart: bool) -> bool 
