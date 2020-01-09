@@ -35,5 +35,10 @@ pipeline {
             sh "cargo audit"
           }
         }
+        stage("Deploy scripts") {
+            steps {
+                sh "cp -R deploy/ /home/simon"
+            }
+        }
     }
 }
