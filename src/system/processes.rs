@@ -39,33 +39,11 @@ impl Processes
         self.id_key += 1;
     }
 
-    fn clearMap(&mut self) 
+    fn clear_map(&mut self) 
     {
         self.component_map.clear();
     }
 
-    
-    pub fn ps_list(&mut self) 
-    {
-        warn!(
-            "{:>5} {:^5} {:>8} {:>8} {:.100}",
-            "PID", "STATE", "UTIME", "STIME", "CMD"
-        );
-
-        for p in &psutil::process::all().unwrap() 
-        {
-            warn!(
-                "{:>5} {:^5} {:>8.2} {:>8.2} {:.100}",
-                p.pid,
-                p.state.to_string(),
-                p.utime,
-                p.stime,
-                p.cmdline()
-                    .unwrap()
-                    .unwrap_or_else(|| format!("[{}]", p.comm))
-            );
-        }
-    }
 
     pub fn find(&mut self, component: &str) ->bool
     {
@@ -112,10 +90,10 @@ impl Processes
                         .unwrap()
                         .unwrap_or_else(|| format!("[{}]", p.comm))
                 );
-                let mut this_pid = p.pid;
-                let mut this_alive = true;
-                let mut new = component;
-                let mut inputted = Component 
+                let this_pid = p.pid;
+                let this_alive = true;
+                let new = component;
+                let inputted = Component 
                 {
                     _name: String::from(new),
                     _pid: this_pid,
@@ -137,7 +115,7 @@ impl Processes
 
     pub fn kill_component(&mut self, component: &str, restart: bool) -> bool 
     {
-        let mut found = self.ps_find(component);
+        let found = self.ps_find(component);
         let result = match found 
         {
             0 => {
@@ -160,9 +138,8 @@ impl Processes
     
     pub fn kill_main_component(&mut self, component: &str) 
     {
-        let mut pid: i32 = 0;
         let mut component_vec: Vec<i32> = Vec::new();
-        let mut iter: i8 = 0;
+        let iter: i8 = 0;
         for (key, val) in self.component_map.iter() 
         {
             warn!(
@@ -180,14 +157,13 @@ impl Processes
             warn!("Killing duplicate : {} pid : {}", component, i);
             if self.kill_component_pid(i) 
             {
-                self.clearMap();
+                self.clear_map();
             }
         }
     }
     
     pub fn kill_duplicate_component(&mut self, component: &str) 
     {
-        let mut pid: i32 = 0;
         let mut component_vec: Vec<i32> = Vec::new();
         let mut iter: i8 = 0;
         for (key, val) in self.component_map.iter() 
@@ -211,7 +187,7 @@ impl Processes
             warn!("Killing duplicate : {} pid : {}", component, i);
             if self.kill_component_pid(i) 
             {
-                self.clearMap();
+                self.clear_map();
             }
         }
     }

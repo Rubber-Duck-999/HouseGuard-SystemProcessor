@@ -1,14 +1,12 @@
 mod rabbitmq;
 mod system;
 
-use clap::{App, Arg};
+use clap::App;
 
 use std::process;
 
-use std::thread;
-use std::time::{Duration, SystemTime};
 extern crate chrono;
-use chrono::prelude::*
+use chrono::prelude::*;
 
 #[macro_use]
 extern crate log;
@@ -17,7 +15,6 @@ extern crate simple_logger;
 use log::Level;
 
 use std::collections::HashMap;
-use std::fs::File;
 use std::path::Path;
 
 #[macro_use]
@@ -63,6 +60,12 @@ impl Control
     fn clear_map(&mut self) 
     {
         self._component_map.clear();
+    }
+
+    fn get_time(&mut self) -> String
+    {
+        let dt = Utc.ymd(2020, 01, 01).and_hms(12, 0, 9);
+        return dt.format("%Y-%m-%d %H:%M:%S").to_string();
     }
 
     fn switch_names(&mut self, component_name:&mut String) -> bool
@@ -111,8 +114,7 @@ impl Control
 
     fn start(&mut self, component: &str, restart: bool) -> bool
     {
-        let mut deploy_exists = Path::new(system::constants::DEPLOY_SCRIPTS);
-        let mut shell = system::constants::DEPLOY_SCRIPTS.to_owned()
+        let shell = system::constants::DEPLOY_SCRIPTS.to_owned()
                          + &component.to_owned();
         let mut exists = Path::new(&shell).exists();
         warn!("Looking for {}, exist? {}", component, exists);
@@ -123,14 +125,12 @@ impl Control
             self._process.start_process(component);
             let mut found = self._process.ps_find(component);
             warn!("We have found {} processes for {}", found, component);
-            let mut attempts = 0;
-            while found != 1 && attempts < 3 
+            if found > 1
             {
                 self._process.kill_component(component, restart);
                 found = self._process.ps_find(component);
-                attempts = attempts + 1;
             }
-            if found != 1 
+            else if found != 0
             {
                 let issue_pre = rabbitmq::types::IssueNotice
                 { 
@@ -144,6 +144,17 @@ impl Control
                 self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue); 
                 exists = false;
             }
+        }
+        else
+        {
+            let event = rabbitmq::types::EventSyp
+            { 
+                severity: 5, 
+                error: "Component File Not Found".to_string(),
+                time: self.get_time(),
+                component: component.to_string()
+            };
+            self.send_event(&event); 
         }
         return exists;
     }
@@ -170,7 +181,7 @@ impl Control
         }
         if self.switch_names(&mut message.component)
         {
-            if ((found < 1) && (message.power == rabbitmq::types::RESTART))
+            if (found < 1) && (message.power == rabbitmq::types::RESTART)
             {
                 self.add_components_control(&mut message.component,
                                             rabbitmq::types::RESTART_SET);
@@ -183,13 +194,11 @@ impl Control
         }
         else
         {
-            let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
-            dt.format("%Y-%m-%d %H:%M:%S").to_string();
             let event = rabbitmq::types::EventSyp
             { 
                 severity: 2, 
                 error: "Component Not Found- Request.Power".to_string(),
-                time: dt,
+                time: self.get_time(),
                 component: system::constants::COMPONENT_NAME.to_string()
             };
             self.send_event(&event);
@@ -199,19 +208,18 @@ impl Control
 
     fn check_process(&mut self)
     {
+        let failure = rabbitmq::types::FailureComponent
+        { 
+            time: self.get_time(),
+            type_of_failure: "Component died".to_string(),
+            severity: rabbitmq::types::RUNTIME_FAILURE
+        };
         let mut found:u8 = 0;
         for (key, val) in self._component_map.iter() 
         {
             debug!("key: {}, name: {}", key, val);
             if ! self._process.find(val)
             {
-                let now = SystemTime::now();
-                let failure = rabbitmq::types::FailureComponent
-                { 
-                    time: now.to_string(),
-                    type_of_failure: "Component died".to_string(),
-                    severity: rabbitmq::types::RUNTIME_FAILURE
-                };
                 let serialized = serde_json::to_string(&failure).unwrap();
                 warn!("Publishing a failure message: {}", serialized);
                 self._channel.publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
@@ -222,7 +230,7 @@ impl Control
     fn control_loop(&mut self) 
     {
         trace!("Declaring consumer...");
-        self._channel.Consume();
+        self._channel.consume();
         let mut message = rabbitmq::types::RequestPower
         {
             power: rabbitmq::types::SHUTDOWN.to_string(),
@@ -232,7 +240,7 @@ impl Control
 
         while ! self._shutdown
         {
-            if self._channel.ConsumeGet(&mut message)
+            if self._channel.consume_get(&mut message)
             {
                 self.request_check(&mut message);
             }
@@ -243,7 +251,7 @@ impl Control
         { 
             severity: 6, 
             error: "Component to be shutdown".to_string(),
-            time: "14:00:00".to_string(),
+            time: self.get_time(),
             component: system::constants::COMPONENT_NAME.to_string()
         };
         self.send_event(&event); 
@@ -260,14 +268,30 @@ fn main()
         info!("Logging has been enabled to info");
     }
 
-    let matches = App::new("exeSystemProcessor")
+    App::new("exeSystemProcessor")
         .version("0.0.1")
         .about("The hearbeat and starter for HouseGuard.");
 
     let mut control = Control::new();
     
     control.add_components_control(system::constants::FH_EXE, 
-                                    rabbitmq::types::RESTART_SET);
+                                   rabbitmq::types::RESTART_SET);
+
+    control.add_components_control(system::constants::DBM_EXE, 
+                                   rabbitmq::types::RESTART_SET);
+
+    control.add_components_control(system::constants::UP_EXE, 
+                                   rabbitmq::types::RESTART_SET);
+ 
+    control.add_components_control(system::constants::NAC_EXE, 
+                                   rabbitmq::types::RESTART_SET);
+    
+    control.add_components_control(system::constants::CM_EXE, 
+                                   rabbitmq::types::RESTART_SET);
+ 
+    control.add_components_control(system::constants::EVM_EXE, 
+                                   rabbitmq::types::RESTART_SET);   
+
     control.control_loop();
 
     process::exit(0);

@@ -7,11 +7,9 @@ extern crate simple_logger;
 
 use crate::rabbitmq::types;
 
-use log::Level;
+use amqp::protocol::basic::{BasicProperties};
 
-use amqp::protocol::basic::{BasicProperties, Deliver};
-
-use std::{str, thread, time};
+use std::{str};
 
 use std::default::Default;
 
@@ -26,19 +24,19 @@ pub struct SessionRabbitmq
     pub _init: bool,
 }
 
-fn GetSession() -> Session 
+fn get_session() -> Session 
 {
     let session = match Session::new(Options 
         {
         ..Default::default()
     }) {
         Ok(session) => session,
-        Err(error) => panic!("Failed openning an amqp session: {:?}", error),
+        Err(error) => panic!("Failed opening an amqp session: {:?}", error),
     };
     return session;
 }
 
-fn GetChannel(mut session: Session) -> Channel 
+fn get_channel(mut session: Session) -> Channel 
 {
     let channel = session
         .open_channel(1)
@@ -51,9 +49,9 @@ impl Default for SessionRabbitmq
 {
     fn default() -> SessionRabbitmq 
     {
-        let session: Session = GetSession();
-        let channel: Channel = GetChannel(session);
-        let session_new: Session = GetSession();
+        let session: Session = get_session();
+        let channel: Channel = get_channel(session);
+        let session_new: Session = get_session();
         SessionRabbitmq 
         {
             _durable: false,
@@ -88,7 +86,7 @@ impl SessionRabbitmq
             .unwrap();
     }
 
-    pub fn Create_session_and_channel(&mut self) 
+    pub fn create_session_and_channel(&mut self) 
     {
         if self._init 
         {
@@ -138,7 +136,7 @@ impl SessionRabbitmq
             .unwrap();
     }
 
-    pub fn Consume(&mut self) 
+    pub fn consume(&mut self) 
     {
         warn!("Beginning consumption");
         self.declare_queue("");
@@ -169,7 +167,7 @@ impl SessionRabbitmq
         warn!("[{} Consumer ] Created.", "");
     }
 
-    pub fn ConsumeGet(&mut self, message:&mut types::RequestPower) -> bool
+    pub fn consume_get(&mut self, message:&mut types::RequestPower) -> bool
     {
         let mut valid:bool = false;
         for get_result in self._channel.basic_get("", false) 
