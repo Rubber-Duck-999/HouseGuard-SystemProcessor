@@ -6,7 +6,9 @@ use clap::{App, Arg};
 use std::process;
 
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, SystemTime};
+extern crate chrono;
+use chrono::prelude::*
 
 #[macro_use]
 extern crate log;
@@ -109,7 +111,10 @@ impl Control
 
     fn start(&mut self, component: &str, restart: bool) -> bool
     {
-        let mut exists = Path::new(component).exists();
+        let mut deploy_exists = Path::new(system::constants::DEPLOY_SCRIPTS);
+        let mut shell = system::constants::DEPLOY_SCRIPTS.to_owned()
+                         + &component.to_owned();
+        let mut exists = Path::new(&shell).exists();
         warn!("Looking for {}, exist? {}", component, exists);
         if exists
         {
@@ -178,11 +183,13 @@ impl Control
         }
         else
         {
+            let dt = Utc.ymd(2014, 11, 28).and_hms(12, 0, 9);
+            dt.format("%Y-%m-%d %H:%M:%S").to_string();
             let event = rabbitmq::types::EventSyp
             { 
                 severity: 2, 
                 error: "Component Not Found- Request.Power".to_string(),
-                time: "14:00:00".to_string(),
+                time: dt,
                 component: system::constants::COMPONENT_NAME.to_string()
             };
             self.send_event(&event);
@@ -198,9 +205,10 @@ impl Control
             debug!("key: {}, name: {}", key, val);
             if ! self._process.find(val)
             {
+                let now = SystemTime::now();
                 let failure = rabbitmq::types::FailureComponent
                 { 
-                    time: "14:00:00".to_string(),
+                    time: now.to_string(),
                     type_of_failure: "Component died".to_string(),
                     severity: rabbitmq::types::RUNTIME_FAILURE
                 };
@@ -247,7 +255,7 @@ fn main()
 {
     simple_logger::init_with_level(Level::Info).unwrap();
 
-    if log_enabled!(Level::Debug) 
+    if log_enabled!(Level::Info) 
     {
         info!("Logging has been enabled to info");
     }
@@ -258,8 +266,8 @@ fn main()
 
     let mut control = Control::new();
     
-    /*control.add_components_control(system::constants::FH_EXE, 
-                                    rabbitmq::types::RESTART_SET);*/
+    control.add_components_control(system::constants::FH_EXE, 
+                                    rabbitmq::types::RESTART_SET);
     control.control_loop();
 
     process::exit(0);

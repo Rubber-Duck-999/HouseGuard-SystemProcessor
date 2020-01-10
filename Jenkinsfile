@@ -2,19 +2,20 @@ pipeline {
     agent any
     stages {
         stage('Build') {
-            steps {
-                sh "cargo build"
-            }
+          steps {
+              sh "cargo build"
+          }
         }
         stage('Test') {
-            steps {
-                sh "cargo test -- --test-threads=1"
-            }
+          steps {
+              sh "cargo test -- --test-threads=1"
+          }
         }
-        stage('Deploy') {
-            steps {
-                echo "Hello"
-            }
+        stage('Coverage') {
+          steps {
+              sh "cargo install cargo-tarpaulin"
+              sh "cargo tarpulin -v "
+          }
         }
         stage("check code style") {
           steps {
