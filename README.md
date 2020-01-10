@@ -9,7 +9,7 @@ This can be used on multiple linux
 ```bash
 cargo build
 
-cargo test
+cargo test -- --test-threads=1
 
 ./target/debug/exeSystemProcessor
 ```
