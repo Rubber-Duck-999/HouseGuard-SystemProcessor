@@ -14,7 +14,7 @@ pipeline {
         stage('Coverage') {
           steps {
               sh "cargo install cargo-tarpaulin"
-              sh "cargo tarpulin -v "
+              sh "cargo tarpaulin -v "
           }
         }
         stage("check code style") {
@@ -43,8 +43,8 @@ pipeline {
         }
     }
     post {
-        always {
-            emailext body: 'A Test EMail', subject: 'Test', to: '$DEFAULT_RECIPIENTS'
+        failure {
+            emailext body: 'Failed to build SYP', subject: 'Build Failure', to: '$DEFAULT_RECIPIENTS'
         }
     }
 }
