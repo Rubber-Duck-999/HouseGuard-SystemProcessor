@@ -28,8 +28,9 @@ fn get_session() -> Session
 {
     let session = match Session::new(Options 
         {
-        ..Default::default()
-    }) {
+            password: "password".to_string(),
+            ..Default::default()
+        }) {
         Ok(session) => session,
         Err(error) => panic!("Failed opening an amqp session: {:?}", error),
     };

@@ -57,6 +57,27 @@ impl Control
         }
     }
 
+    pub fn add_components_shutdown(&mut self, component: &str)
+    {
+        trace!("Adding component to control map");
+        self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
+        self._key += 1;
+        self._process.kill_main_component(component);
+        let mut found = self._process.ps_find(component);
+        if found > 0
+        {
+            error!("The component will die, please debug {}", component);
+            let event = rabbitmq::types::EventSyp
+            { 
+                severity: 4, 
+                error: "Component will not shutdown - Request.Power".to_string(),
+                time: self.get_time(),
+                component: system::constants::COMPONENT_NAME.to_string()
+            };
+            self.send_event(&event);
+        }
+    }
+
     fn clear_map(&mut self) 
     {
         self._component_map.clear();
@@ -70,26 +91,36 @@ impl Control
 
     fn switch_names(&mut self, component_name:&mut String) -> bool
     {
-        let mut valid:bool = false;
+        let mut valid:bool = true;
         if component_name == system::constants::CAMERA_MONITOR
         {
             debug!("CM Found");
+            let mut value = system::constants::CM_EXE.to_string();
+            *component_name = value;
         }
         else if component_name == system::constants::NETWORK_ACCESS_CONTROLLER
         {
             debug!("NAC Found");
+            let mut value = system::constants::NAC_EXE.to_string();
+            *component_name = value;
         }
         else if component_name == system::constants::ENVIRONMENT_MANAGER
         {
             debug!("EVM Found");
+            let mut value = system::constants::EVM_EXE.to_string();
+            *component_name = value;
         }
         else if component_name == system::constants::FAULT_HANDLER
         {
             debug!("FH Found");
+            let mut value = system::constants::FH_EXE.to_string();
+            *component_name = value;
         }
         else if component_name == system::constants::DATABASE_MANAGER
         {
             debug!("DBM Found");
+            let mut value = system::constants::DBM_EXE.to_string();
+            *component_name = value;
         }
         else if component_name == system::constants::USER_PANEL
         {
@@ -102,7 +133,7 @@ impl Control
         }
         else if component_name == system::constants::RABBITMQ
         {
-            debug!("NAC Found");
+            debug!("Rabbitmq Found");
         }
         else
         {
@@ -170,17 +201,17 @@ impl Control
     {
         let mut found:u8 = 0;
         warn!("Power request for {} to be {}", message.component, message.power);
-        for (key, val) in self._component_map.iter() 
-        {
-            debug!("key: {}, name: {}", key, val);
-            if val.contains(&message.component) 
-            {
-                debug!("Found Component : {}", message.component);
-                found = found + 1;
-            }
-        }
         if self.switch_names(&mut message.component)
         {
+            for (key, val) in self._component_map.iter() 
+            {
+                debug!("key: {}, name: {}", key, val);
+                if val.contains(&message.component) 
+                {
+                    debug!("Found Component : {}", message.component);
+                    found = found + 1;
+                }
+            }
             if (found < 1) && (message.power == rabbitmq::types::RESTART)
             {
                 self.add_components_control(&mut message.component,
@@ -188,8 +219,7 @@ impl Control
             }
             else if message.power == rabbitmq::types::SHUTDOWN
             {
-                self.add_components_control(&mut message.component,
-                                            rabbitmq::types::SHUTDOWN_SET);
+                self.add_components_shutdown(&mut message.component);
             }
         }
         else

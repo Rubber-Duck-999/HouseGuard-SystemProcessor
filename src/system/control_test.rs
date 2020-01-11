@@ -1,4 +1,5 @@
 use crate::Control;
+use crate::system::constants;
 
 #[cfg(test)]
 mod tests 
@@ -20,8 +21,17 @@ mod tests
     fn test_check_exists()
     {
         let mut controller = Control::new();
-        let mut result = FAULT_HANDLER.to_string();
+        let mut result = constants::FAULT_HANDLER.to_string();
         let mut valid = controller.switch_names(&mut result);
         assert!(valid);
+    }
+
+    #[test]
+    fn test_check_switch()
+    {
+        let mut controller = Control::new();
+        let mut result = constants::FAULT_HANDLER.to_string();
+        let mut component = controller.switch_names(&mut result);
+        assert_eq!(result, constants::FH_EXE);
     }
 }
