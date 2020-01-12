@@ -14,24 +14,21 @@ pub const RESTART_SET: bool = true;
 pub const SHUTDOWN_SET: bool = false;
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct RequestPower 
-{
+pub struct RequestPower {
     pub power: String,
     pub severity: u16,
     pub component: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct IssueNotice
-{
+pub struct IssueNotice {
     pub severity: u16,
     pub component: String,
     pub action: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct EventSyp
-{
+pub struct EventSyp {
     pub severity: u16,
     pub error: String,
     pub time: String,
@@ -39,8 +36,7 @@ pub struct EventSyp
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct FailureComponent
-{
+pub struct FailureComponent {
     pub time: String,
     pub type_of_failure: String,
     pub severity: u16,

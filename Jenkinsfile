@@ -13,8 +13,7 @@ pipeline {
         }
         stage('Coverage') {
           steps {
-              sh "cargo install cargo-tarpaulin"
-              sh "cargo tarpaulin -v "
+              sh "cargo tarpaulin -v -- --test-threads=1"
           }
         }
         stage("check code style") {

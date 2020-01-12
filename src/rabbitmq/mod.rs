@@ -1,3 +1,2 @@
-pub mod types;
 pub mod interaction;
-
+pub mod types;
