@@ -1,5 +1,8 @@
 pipeline {
     agent any
+    options {
+        parallelsAlwaysFailFast()
+    }
     stages {
         stage('Build') {
           steps {
@@ -40,6 +43,30 @@ pipeline {
                 sh "cp -R deploy/ /home/simon"
             }
         }
+
+        stage('Parallel Stage') {
+            when {
+                branch 'master'
+            }
+            parallel {
+                stage('Python') {
+                    agent {
+                        label "for-running-integrator"
+                    }
+                    steps {
+                        echo "Python"
+                    }
+                }
+                stage('Rust') {
+                    agent {
+                        label "for-running-tests"
+                    }
+                    steps {
+                        echo "SYP"
+                    }
+                }
+            }
+        }
     }
     post {
         failure {
@@ -47,3 +74,4 @@ pipeline {
         }
     }
 }
+
