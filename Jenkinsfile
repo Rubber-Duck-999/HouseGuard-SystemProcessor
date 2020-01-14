@@ -14,6 +14,7 @@ pipeline {
               sh "cargo test -- --test-threads=1"
           }
         }
+        /*
         stage('Coverage') {
           steps {
               sh "cargo tarpaulin -v -- --test-threads=1"
@@ -25,6 +26,7 @@ pipeline {
               sh "./check-code-style.sh"
           }
         }
+        */
         stage("Integration") {
           steps {
             sh "chmod +x ./runIntegrationTest.sh"
