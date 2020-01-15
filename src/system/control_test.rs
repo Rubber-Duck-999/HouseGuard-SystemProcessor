@@ -1,5 +1,6 @@
 use crate::system::constants;
 use crate::Control;
+use log::Level;
 
 #[cfg(test)]
 mod tests {
@@ -33,9 +34,10 @@ mod tests {
 
     #[test]
     fn test_add_component() {
+        simple_logger::init_with_level(Level::Info).unwrap();
         let mut controller = Control::new();
-        let mut result = constants::FAULT_HANDLER.to_string();
-        let mut component = controller.add_components_control(&mut result, true);
+        let mut result = constants::FH_EXE.to_string();
+        controller.add_components_control(&mut result, true);
         let found:u8 = controller.exists_in_map(&result);
         assert_eq!(found, 1);
     }
@@ -43,10 +45,9 @@ mod tests {
     #[test]
     fn test_add_component_shutdown() {
         let mut controller = Control::new();
-        let mut result = constants::FAULT_HANDLER.to_string();
-        let mut component = controller.add_components_shutdown(&mut result);
+        let mut result = constants::FH_EXE.to_string();
+        controller.add_components_shutdown(&mut result);
         let found:u8 = controller.exists_in_map(&result);
-        assert_eq!(found, 1);
-    }   
-
+        assert_eq!(found, 0);
+    }
 }

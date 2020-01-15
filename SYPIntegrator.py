@@ -32,21 +32,30 @@ channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_event)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_issue)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_failure)
 text = '{ "power":"shutdown", "severity":5, "component": "DBM" }'
-channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
+#channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
 print("Waiting for Messages")
-
+count = 0
+queue_empty = False
 
 def callback(ch, method, properties, body):
-    print(" [x] %r:%r" % (method.routing_key, body))
-    time.sleep(5)
+    print(" Received %r:%r" % (method.routing_key, body))
+    print("Count is : ", count)
+    time.sleep(0.3)
     text = '{ "power":"shutdown", "severity":5, "component": "SYP" }'
-    channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
-
-try:
-    subprocess.call(["./target/debug/exeSystemProcessor"])
-    channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)
-    channel.start_consuming()
-except subprocess.CalledProcessError as e:
-    print(e.output)
+    if count == 5:
+        print("Publishing Message")
+        channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
+        queue_empty = True
 
 
+
+while not queue_empty:
+    method, properties, body = channel.basic_get(queue=queue_name, auto_ack=False)
+    if not body is None:
+        callback(channel, method, properties, body)
+        count = count + 1
+       
+    #try:
+    #    subprocess.run(["./target/debug/exeSystemProcessor"])
+    #except subprocess.CalledProcessError as e:
+    #    print(e.output)

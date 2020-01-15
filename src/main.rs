@@ -58,12 +58,14 @@ impl Control {
 
     pub fn add_components_shutdown(&mut self, component: &str) {
         trace!("Adding component to control map");
-        self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
-        self._key += 1;
-        self._process.kill_main_component(component);
-        let mut found = self._process.ps_find(component);
+        let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
+        let mut exists = Path::new(&shell).exists();
+        warn!("Looking for {}, exist? {}", shell, exists);
+        let mut found = self._process.ps_find(&shell);
+        self._process.kill_main_component(&shell);
+        found = self._process.ps_find(&component);
         if found > 0 {
-            error!("The component will die, please debug {}", component);
+            error!("The component will not die, please debug {}", component);
             let event = rabbitmq::types::EventSyp {
                 severity: 4,
                 error: "Component will not shutdown - Request.Power".to_string(),
@@ -71,6 +73,8 @@ impl Control {
                 component: system::constants::COMPONENT_NAME.to_string(),
             };
             self.send_event(&event);
+            self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
+            self._key += 1;
         }
     }
 
@@ -134,47 +138,44 @@ impl Control {
     }
 
     fn start(&mut self, component: &str, restart: bool) -> bool {
-        if self.switch_names(&mut component.to_string()) {
-            let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
-            let mut exists = Path::new(&shell).exists();
-            warn!("Looking for {}, exist? {}", component, exists);
-            if exists {
-                debug!(
-                    "The component file does exist: {}",
-                    Path::new(component).exists()
-                );
-                self._process.start_process(component);
-                let mut found = self._process.ps_find(component);
-                warn!("We have found {} processes for {}", found, component);
-                if found > 1 {
-                    self._process.kill_component(component, restart);
-                    found = self._process.ps_find(component);
-                } else if found != 0 {
-                    let issue_pre = rabbitmq::types::IssueNotice {
-                        severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
-                        component: component.to_string(),
-                        action: 0,
-                    };
-
-                    let issue = serde_json::to_string(&issue_pre).unwrap();
-                    trace!("Serialized: {}", issue);
-                    self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
-                    exists = false;
-                }
+        let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
+        let mut exists = Path::new(&shell).exists();
+        warn!("Looking for {}, exist? {}", shell, exists);
+        if exists {
+            debug!(
+                "The component file does exist: {}", exists);
+            if restart {
+                self._process.start_process(&shell);
             } else {
-                let event = rabbitmq::types::EventSyp {
-                    severity: 5,
-                    error: "Component File Not Found".to_string(),
-                    time: self.get_time(),
-                    component: component.to_string(),
-                };
-                self.send_event(&event);
+                return exists;
             }
-            return exists;
+            let mut found = self._process.ps_find(&shell);
+            warn!("We have found {} processes for {}", found, &shell);
+            if found > 1 {
+                self._process.kill_component(&shell, restart);
+                found = self._process.ps_find(&shell);
+            } else if found != 1 {
+                let issue_pre = rabbitmq::types::IssueNotice {
+                    severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
+                    component: component.to_string(),
+                    action: 0,
+                };
+
+                let issue = serde_json::to_string(&issue_pre).unwrap();
+                trace!("Serialized: {}", issue);
+                self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
+                exists = false;
+            }
         } else {
-            warn!("The component name was not valid, : {}", component);
-            return false;
+            let event = rabbitmq::types::EventSyp {
+                severity: 5,
+                error: "Component File Not Found".to_string(),
+                time: self.get_time(),
+                component: component.to_string(),
+            };
+            self.send_event(&event);
         }
+        return exists;
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
@@ -190,27 +191,30 @@ impl Control {
             "Power request for {} to be {}",
             message.component, message.power
         );
-        if self.switch_names(&mut message.component) {
-            for (key, val) in self._component_map.iter() {
-                debug!("key: {}, name: {}", key, val);
-                if val.contains(&message.component) {
-                    debug!("Found Component : {}", message.component);
-                    found = found + 1;
+        self.switch_names(&mut message.component);
+        if message.component != system::constants::COMPONENT_NAME {
+            if self.switch_names(&mut message.component) {
+                for (key, val) in self._component_map.iter() {
+                    debug!("key: {}, name: {}", key, val);
+                    if val.contains(&message.component) {
+                        debug!("Found Component : {}", message.component);
+                        found = found + 1;
+                    }
                 }
+                if (found < 1) && (message.power == rabbitmq::types::RESTART) {
+                    self.add_components_control(&mut message.component, rabbitmq::types::RESTART_SET);
+                } else if message.power == rabbitmq::types::SHUTDOWN {
+                    self.add_components_shutdown(&mut message.component);
+                }
+            } else {
+                let event = rabbitmq::types::EventSyp {
+                    severity: 2,
+                    error: "Component Not Found- Request.Power".to_string(),
+                    time: self.get_time(),
+                    component: system::constants::COMPONENT_NAME.to_string(),
+                };
+                self.send_event(&event);
             }
-            if (found < 1) && (message.power == rabbitmq::types::RESTART) {
-                self.add_components_control(&mut message.component, rabbitmq::types::RESTART_SET);
-            } else if message.power == rabbitmq::types::SHUTDOWN {
-                self.add_components_shutdown(&mut message.component);
-            }
-        } else {
-            let event = rabbitmq::types::EventSyp {
-                severity: 2,
-                error: "Component Not Found- Request.Power".to_string(),
-                time: self.get_time(),
-                component: system::constants::COMPONENT_NAME.to_string(),
-            };
-            self.send_event(&event);
         }
     }
 
@@ -223,7 +227,8 @@ impl Control {
         let mut found: u8 = 0;
         for (key, val) in self._component_map.iter() {
             debug!("key: {}, name: {}", key, val);
-            if !self._process.find(val) {
+            let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
+            if !self._process.find(&shell) {
                 let serialized = serde_json::to_string(&failure).unwrap();
                 warn!("Publishing a failure message: {}", serialized);
                 self._channel
@@ -241,7 +246,7 @@ impl Control {
             component: "None".to_string(),
         };
 
-        while !self._shutdown {
+        while self._shutdown != true {
             if self._channel.consume_get(&mut message) {
                 self.request_check(&mut message);
             }

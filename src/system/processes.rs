@@ -97,8 +97,9 @@ impl Processes {
     }
 
     pub fn start_process(&mut self, component: &str) {
-        debug!("Starting process : {}", component);
+        warn!("Starting process : {}", component);
         let status = Command::new("sh").arg(component).spawn();
+        debug!("Status of run: {:?}", status);
     }
 
     pub fn kill_component(&mut self, component: &str, restart: bool) -> bool {
@@ -171,7 +172,7 @@ impl Processes {
         let process = Process::new(component).unwrap();
 
         if let Err(error) = process.kill() {
-            println!("Failed to kill process: {}.", error);
+            error!("Failed to kill process: {}.", error);
             error_present = true;
         }
         return error_present;

@@ -1,4 +1,6 @@
 use crate::system::processes::Processes;
+use crate::system::constants;
+
 #[cfg(test)]
 mod tests {
     // Note this useful idiom: importing names from outer (for mod tests) scope.
@@ -17,13 +19,25 @@ mod tests {
     #[test]
     fn test_start_runner() {
         let mut process_check = Processes::new();
-        let mut test_runner_sh = "./deploy/runTest.sh";
+        let mut test_runner_sh = "./deploy/runFH.sh";
         process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
         process_check.kill_main_component(test_runner_sh);
         found = process_check.ps_find(test_runner_sh);
         assert_eq!(found, 0);
     }
+
+    #[test]
+    fn test_start_process() {
+        let mut process_check = Processes::new();
+        let test_runner_sh = constants::DEPLOY_SCRIPTS.to_owned() + 
+            &constants::FH_EXE.to_owned();
+        process_check.start_process(&test_runner_sh);
+        let mut found = process_check.ps_find(&test_runner_sh);
+        process_check.kill_main_component(&test_runner_sh);
+        found = process_check.ps_find(&test_runner_sh);
+        assert_eq!(found, 0);
+    }   
 
     #[test]
     fn test_start_two_runner() {

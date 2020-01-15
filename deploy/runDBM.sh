@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo "Run DBM"
-java -jar DBM.jar
+#java -jar DBM.jar
