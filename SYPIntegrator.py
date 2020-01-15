@@ -7,7 +7,7 @@ Created on 10 Oct 2019
 #!/usr/bin/env python
 import pika
 import sys, time, json
-
+import subprocess
 ###
 # Network Access Controller Simulator Interface
 # This is to show how the NAC could manager
@@ -15,7 +15,8 @@ import sys, time, json
 
 ### Setup of EVM connection
 print("## Beginning SYPSIM")
-connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+credentials = pika.PlainCredentials('guest', 'password')
+connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', 5672, '/', credentials))
 channel = connection.channel()
 channel.exchange_declare(exchange='topics', exchange_type='topic', durable=True)
 key_publish = 'Request.Power'
@@ -41,5 +42,11 @@ def callback(ch, method, properties, body):
     text = '{ "power":"shutdown", "severity":5, "component": "SYP" }'
     channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
 
-channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)
-channel.start_consuming()
+try:
+    subprocess.call(["./target/debug/exeSystemProcessor"])
+    channel.basic_consume(queue=queue_name, on_message_callback=callback, auto_ack=False)
+    channel.start_consuming()
+except subprocess.CalledProcessError as e:
+    print(e.output)
+
+

@@ -45,14 +45,14 @@ impl Control {
 
     pub fn add_components_control(&mut self, component: &str, restart: bool) {
         trace!("Adding component to control map");
-        self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
-        self._key += 1;
         if !self.start(component, restart) {
             error!(
                 "The component will not start up, please debug {}",
                 component
             );
-            process::exit(0);
+        } else {
+            self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
+            self._key += 1;
         }
     }
 
@@ -134,42 +134,47 @@ impl Control {
     }
 
     fn start(&mut self, component: &str, restart: bool) -> bool {
-        let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
-        let mut exists = Path::new(&shell).exists();
-        warn!("Looking for {}, exist? {}", component, exists);
-        if exists {
-            debug!(
-                "The component file does exist: {}",
-                Path::new(component).exists()
-            );
-            self._process.start_process(component);
-            let mut found = self._process.ps_find(component);
-            warn!("We have found {} processes for {}", found, component);
-            if found > 1 {
-                self._process.kill_component(component, restart);
-                found = self._process.ps_find(component);
-            } else if found != 0 {
-                let issue_pre = rabbitmq::types::IssueNotice {
-                    severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
-                    component: component.to_string(),
-                    action: 0,
-                };
+        if self.switch_names(&mut component.to_string()) {
+            let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
+            let mut exists = Path::new(&shell).exists();
+            warn!("Looking for {}, exist? {}", component, exists);
+            if exists {
+                debug!(
+                    "The component file does exist: {}",
+                    Path::new(component).exists()
+                );
+                self._process.start_process(component);
+                let mut found = self._process.ps_find(component);
+                warn!("We have found {} processes for {}", found, component);
+                if found > 1 {
+                    self._process.kill_component(component, restart);
+                    found = self._process.ps_find(component);
+                } else if found != 0 {
+                    let issue_pre = rabbitmq::types::IssueNotice {
+                        severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
+                        component: component.to_string(),
+                        action: 0,
+                    };
 
-                let issue = serde_json::to_string(&issue_pre).unwrap();
-                trace!("Serialized: {}", issue);
-                self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
-                exists = false;
+                    let issue = serde_json::to_string(&issue_pre).unwrap();
+                    trace!("Serialized: {}", issue);
+                    self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
+                    exists = false;
+                }
+            } else {
+                let event = rabbitmq::types::EventSyp {
+                    severity: 5,
+                    error: "Component File Not Found".to_string(),
+                    time: self.get_time(),
+                    component: component.to_string(),
+                };
+                self.send_event(&event);
             }
+            return exists;
         } else {
-            let event = rabbitmq::types::EventSyp {
-                severity: 5,
-                error: "Component File Not Found".to_string(),
-                time: self.get_time(),
-                component: component.to_string(),
-            };
-            self.send_event(&event);
+            warn!("The component name was not valid, : {}", component);
+            return false;
         }
-        return exists;
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
