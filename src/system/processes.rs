@@ -52,6 +52,16 @@ impl Processes {
         return found;
     }
 
+    pub fn ps_find_pid(&mut self, pid: i32) -> bool {
+        let mut found: bool = false;
+        for p in &psutil::process::all().unwrap() {
+            if p.pid == pid {
+                found = true;
+            }
+        }
+        return found;
+    }
+
     pub fn ps_find(&mut self, component: &str) -> u16 {
         let mut amount_found: u16 = 0;
 
@@ -81,7 +91,7 @@ impl Processes {
                         .unwrap_or_else(|| format!("[{}]", p.comm))
                 );
                 let this_pid = p.pid;
-                let this_alive = true;
+                let mut this_alive = true;
                 let new = component;
                 let inputted = Component {
                     _name: String::from(new),
@@ -131,14 +141,14 @@ impl Processes {
                 key, val._name, val._pid, val._alive
             );
             if val._name.contains(component) {
-                warn!("Found Process : {}", component);
-                component_vec.push(val._pid);
-            }
-        }
-        for i in component_vec {
-            warn!("Killing duplicate : {} pid : {}", component, i);
-            if self.kill_component_pid(i) {
-                self.clear_map();
+                warn!("Found Process : Key {}, {}", key, component);
+                let new_val = self.component_map.get(&key);
+                //warn!("{:?}", new_val._name);
+                /*
+                let pid = new_val._pid;
+                if self.kill_component_pid(pid) {
+                    val._alive = false;
+                }*/
             }
         }
     }
@@ -167,12 +177,15 @@ impl Processes {
         }
     }
 
-    fn kill_component_pid(&mut self, component: i32) -> bool {
+    pub fn kill_component_pid(&mut self, component: i32) -> bool {
         let mut error_present: bool = false;
         let process = Process::new(component).unwrap();
-
-        if let Err(error) = process.kill() {
-            error!("Failed to kill process: {}.", error);
+        if self.ps_find_pid(process.pid) {
+            if let Err(error) = process.kill() {
+                error!("Failed to kill process: {}.", error);
+                error_present = true;
+            }
+        } else {
             error_present = true;
         }
         return error_present;

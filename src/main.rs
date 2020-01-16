@@ -78,10 +78,6 @@ impl Control {
         }
     }
 
-    fn clear_map(&mut self) {
-        self._component_map.clear();
-    }
-
     fn get_time(&mut self) -> String {
         let dt = Utc.ymd(2020, 01, 01).and_hms(12, 0, 9);
         return dt.format("%Y-%m-%d %H:%M:%S").to_string();

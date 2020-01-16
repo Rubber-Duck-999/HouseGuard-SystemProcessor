@@ -45,6 +45,7 @@ mod tests {
         let mut test_runner_sh = "./deploy/runTest.sh";
         process_check.start_process(test_runner_sh);
         process_check.start_process(test_runner_sh);
+        process_check.start_process(test_runner_sh);
         let mut found = process_check.ps_find(test_runner_sh);
         process_check.kill_main_component(test_runner_sh);
         found = process_check.ps_find(test_runner_sh);
@@ -71,5 +72,12 @@ mod tests {
         process_check.kill_duplicate_component(test_runner_sh);
         found = process_check.ps_find(test_runner_sh);
         assert_eq!(found, 1);
+    }
+
+    #[test]
+    fn test_error_pid_exist() {
+        let mut process_check = Processes::new();
+        let pid:i32 = 5409;
+        assert!(process_check.ps_find_pid(pid));
     }
 }
