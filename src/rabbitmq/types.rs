@@ -11,7 +11,6 @@ pub const RABBITMQ_SEVERITY: u16 = 6;
 pub const SHUTDOWN: &str = "shutdown";
 pub const RESTART: &str = "restart";
 pub const RESTART_SET: bool = true;
-pub const SHUTDOWN_SET: bool = false;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct RequestPower {

@@ -1,3 +1,7 @@
 #!/bin/sh
 
-sleep 2
+echo "Run Test"
+while [ true ]
+do
+    n=1
+done

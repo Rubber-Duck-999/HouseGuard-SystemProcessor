@@ -28,6 +28,7 @@ struct Control {
     _channel: rabbitmq::interaction::SessionRabbitmq,
     _shutdown: bool,
     _key: u16,
+    _event_counter: u32,
 }
 
 impl Control {
@@ -40,6 +41,7 @@ impl Control {
             },
             _shutdown: false,
             _key: 0,
+            _event_counter: 0,
         }
     }
 
@@ -62,19 +64,30 @@ impl Control {
         let mut exists = Path::new(&shell).exists();
         warn!("Looking for {}, exist? {}", shell, exists);
         let mut found = self._process.ps_find(&shell);
-        self._process.kill_main_component(&shell);
-        found = self._process.ps_find(&component);
-        if found > 0 {
-            error!("The component will not die, please debug {}", component);
+        if found == 0 {
+            error!("The component was not alive and we had a shutdown resuest, please debug {}", component);
             let event = rabbitmq::types::EventSyp {
                 severity: 4,
-                error: "Component will not shutdown - Request.Power".to_string(),
+                error: "Component not alive already - Request.Power".to_string(),
                 time: self.get_time(),
-                component: system::constants::COMPONENT_NAME.to_string(),
+                component: component.to_string(),
             };
             self.send_event(&event);
-            self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
-            self._key += 1;
+        } else {
+            self._process.kill_component(&shell, false);
+            found = self._process.ps_find(&component);
+            if found > 0 {
+                error!("The component will not die, please debug {}", component);
+                let event = rabbitmq::types::EventSyp {
+                    severity: 4,
+                    error: "Component will not shutdown - Request.Power".to_string(),
+                    time: self.get_time(),
+                    component: system::constants::COMPONENT_NAME.to_string(),
+                };
+                self.send_event(&event);
+                self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
+                self._key += 1;
+            }
         }
     }
 
@@ -111,7 +124,7 @@ impl Control {
             *component_name = value;
         } else if component_name == system::constants::COMPONENT_NAME {
             debug!("SYP Found - This initiates shutdown");
-            self._shutdown = true;
+            self.set_shutdown();
         } else if component_name == system::constants::RABBITMQ {
             debug!("Rabbitmq Found");
         } else {
@@ -142,25 +155,23 @@ impl Control {
                 "The component file does exist: {}", exists);
             if restart {
                 self._process.start_process(&shell);
-            } else {
-                return exists;
-            }
-            let mut found = self._process.ps_find(&shell);
-            warn!("We have found {} processes for {}", found, &shell);
-            if found > 1 {
-                self._process.kill_component(&shell, restart);
-                found = self._process.ps_find(&shell);
-            } else if found != 1 {
-                let issue_pre = rabbitmq::types::IssueNotice {
-                    severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
-                    component: component.to_string(),
-                    action: 0,
-                };
-
-                let issue = serde_json::to_string(&issue_pre).unwrap();
-                trace!("Serialized: {}", issue);
-                self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
-                exists = false;
+                let mut found = self._process.ps_find(&shell);
+                warn!("We have found {} processes for {}", found, &shell);
+                if found > 1 {
+                    self._process.kill_component(&shell, restart);
+                    found = self._process.ps_find(&shell);
+                } else if found != 1 {
+                    let issue_pre = rabbitmq::types::IssueNotice {
+                        severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
+                        component: component.to_string(),
+                        action: 0,
+                    };
+                    let issue = serde_json::to_string(&issue_pre).unwrap();
+                    trace!("Serialized: {}", issue);
+                    self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
+                    self._event_counter += 1;
+                    exists = false;
+                }
             }
         } else {
             let event = rabbitmq::types::EventSyp {
@@ -179,6 +190,7 @@ impl Control {
         let serialized = serde_json::to_string(&message).unwrap();
         self._channel
             .publish(rabbitmq::types::EVENT_SYP, &serialized);
+        self._event_counter += 1;
     }
 
     fn request_check(&mut self, message: &mut rabbitmq::types::RequestPower) {
@@ -187,9 +199,9 @@ impl Control {
             "Power request for {} to be {}",
             message.component, message.power
         );
-        self.switch_names(&mut message.component);
+        let valid = self.switch_names(&mut message.component);
         if message.component != system::constants::COMPONENT_NAME {
-            if self.switch_names(&mut message.component) {
+            if valid {
                 for (key, val) in self._component_map.iter() {
                     debug!("key: {}, name: {}", key, val);
                     if val.contains(&message.component) {
@@ -224,13 +236,26 @@ impl Control {
         for (key, val) in self._component_map.iter() {
             debug!("key: {}, name: {}", key, val);
             let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
-            if !self._process.find(&shell) {
+            if self._process.ps_find(&shell) < 1 {
                 let serialized = serde_json::to_string(&failure).unwrap();
                 warn!("Publishing a failure message: {}", serialized);
                 self._channel
                     .publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
+                self._event_counter += 1;
             }
         }
+    }
+
+    pub fn get_shutdown(&mut self) -> bool {
+        return self._shutdown;
+    }
+
+    pub fn set_shutdown(&mut self) {
+        self._shutdown = true;
+    }
+
+    pub fn get_event_counter(&mut self) -> u32 {
+        return self._event_counter;
     }
 
     fn control_loop(&mut self) {
