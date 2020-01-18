@@ -30,7 +30,7 @@ pipeline {
         stage("Integration") {
           steps {
             sh "chmod +x ./runIntegrationTest.sh"
-            sh "./runIntegrationTest.sh"
+            //sh "./runIntegrationTest.sh"
           }
         }
         stage("Vulnerabilities Test") {
@@ -43,30 +43,6 @@ pipeline {
         stage("Deploy scripts") {
             steps {
                 sh "cp -R deploy/ /home/simon"
-            }
-        }
-
-        stage('Parallel Stage') {
-            when {
-                branch 'master'
-            }
-            parallel {
-                stage('Python') {
-                    agent {
-                        label "for-running-integrator"
-                    }
-                    steps {
-                        echo "Python"
-                    }
-                }
-                stage('Rust') {
-                    agent {
-                        label "for-running-tests"
-                    }
-                    steps {
-                        echo "SYP"
-                    }
-                }
             }
         }
     }

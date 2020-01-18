@@ -1,5 +1,5 @@
-use crate::system::processes::Processes;
 use crate::system::constants;
+use crate::system::processes::Processes;
 
 #[cfg(test)]
 mod tests {
@@ -30,14 +30,13 @@ mod tests {
     #[test]
     fn test_start_process() {
         let mut process_check = Processes::new();
-        let test_runner_sh = constants::DEPLOY_SCRIPTS.to_owned() + 
-            &constants::FH_EXE.to_owned();
+        let test_runner_sh = constants::DEPLOY_SCRIPTS.to_owned() + &constants::FH_EXE.to_owned();
         process_check.start_process(&test_runner_sh);
         let mut found = process_check.ps_find(&test_runner_sh);
         process_check.kill_main_component(&test_runner_sh);
         found = process_check.ps_find(&test_runner_sh);
         assert_eq!(found, 0);
-    }   
+    }
 
     #[test]
     fn test_start_two_runner() {
@@ -116,7 +115,7 @@ mod tests {
     #[should_panic]
     fn test_error_pid_exist() {
         let mut process_check = Processes::new();
-        let pid:i32 = 5409;
+        let pid: i32 = 5409;
         assert!(process_check.ps_find_pid(pid));
     }
 }

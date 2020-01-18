@@ -1,7 +1,7 @@
-use crate::system::constants;
-use crate::Control;
 use crate::rabbitmq;
+use crate::system::constants;
 use crate::system::processes::Processes;
+use crate::Control;
 use log::Level;
 
 #[cfg(test)]
@@ -84,7 +84,7 @@ mod tests {
         let mut controller = Control::new();
         let mut result = constants::FH_EXE.to_string();
         controller.add_components_control(&mut result, true);
-        let found:u8 = controller.exists_in_map(&result);
+        let found: u8 = controller.exists_in_map(&result);
         assert_eq!(found, 1);
     }
 
@@ -93,7 +93,7 @@ mod tests {
         let mut controller = Control::new();
         let mut result = constants::FH_EXE.to_string();
         controller.add_components_shutdown(&mut result);
-        let found:u8 = controller.exists_in_map(&result);
+        let found: u8 = controller.exists_in_map(&result);
         assert_eq!(found, 0);
     }
 
@@ -102,7 +102,7 @@ mod tests {
         let mut controller = Control::new();
         let mut result = "crap".to_string();
         controller.add_components_control(&mut result, false);
-        let found:u8 = controller.exists_in_map(&result);
+        let found: u8 = controller.exists_in_map(&result);
         assert_eq!(found, 0);
     }
 
@@ -121,9 +121,8 @@ mod tests {
         let time = controller.get_time();
         if !time.contains("-") & !time.contains(":") {
             assert!(false);
-        } 
+        }
     }
-
 
     #[test]
     fn control_loop_exit() {
@@ -172,7 +171,6 @@ mod tests {
         assert_eq!(exists, true);
     }
 
-
     #[test]
     fn test_start_file_found_and_kill() {
         let mut controller = Control::new();
@@ -181,15 +179,13 @@ mod tests {
         assert_eq!(exists, true);
 
         let mut process_check = Processes::new();
-        let mut test_runner_sh = constants::DEPLOY_SCRIPTS.to_owned() 
-                                + &result.to_owned();;
+        let mut test_runner_sh = constants::DEPLOY_SCRIPTS.to_owned() + &result.to_owned();
         let mut found = process_check.ps_find(&test_runner_sh);
         assert_eq!(found, 1);
         process_check.kill_main_component(&test_runner_sh);
         found = process_check.ps_find(&test_runner_sh);
         assert_eq!(found, 0);
     }
-
 
     #[test]
     fn request_check_no_processes() {

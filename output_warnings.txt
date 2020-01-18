@@ -1,0 +1,220 @@
+   Compiling exeSystemProcessor v1.1.0 (/home/simon/Documents/HouseGuard-SystemProcessor)
+warning: unused import: `crate::system::constants`
+ --> src/system/control_test.rs:1:5
+  |
+1 | use crate::system::constants;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unused import: `crate::Control`
+ --> src/system/control_test.rs:2:5
+  |
+2 | use crate::Control;
+  |     ^^^^^^^^^^^^^^
+
+warning: unused import: `crate::rabbitmq`
+ --> src/system/control_test.rs:3:5
+  |
+3 | use crate::rabbitmq;
+  |     ^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::system::processes::Processes`
+ --> src/system/control_test.rs:4:5
+  |
+4 | use crate::system::processes::Processes;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `log::Level`
+ --> src/system/control_test.rs:5:5
+  |
+5 | use log::Level;
+  |     ^^^^^^^^^^
+
+warning: unused import: `crate::system::processes::Processes`
+ --> src/system/processes_test.rs:1:5
+  |
+1 | use crate::system::processes::Processes;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: unused import: `crate::system::constants`
+ --> src/system/processes_test.rs:2:5
+  |
+2 | use crate::system::constants;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: value assigned to `found` is never read
+   --> src/main.rs:162:21
+    |
+162 |                     found = self._process.ps_find(&shell);
+    |                     ^^^^^
+    |
+    = note: `#[warn(unused_assignments)]` on by default
+    = help: maybe it is overwritten before being read?
+
+warning: unused variable: `found`
+   --> src/main.rs:235:17
+    |
+235 |         let mut found: u8 = 0;
+    |                 ^^^^^ help: consider prefixing with an underscore: `_found`
+    |
+    = note: `#[warn(unused_variables)]` on by default
+
+warning: unused variable: `result`
+  --> src/system/processes.rs:53:13
+   |
+53 |         let result = match found {
+   |             ^^^^^^ help: consider prefixing with an underscore: `_result`
+
+warning: variable does not need to be mutable
+  --> src/main.rs:64:13
+   |
+64 |         let mut exists = Path::new(&shell).exists();
+   |             ----^^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` on by default
+
+warning: variable does not need to be mutable
+   --> src/main.rs:103:17
+    |
+103 |             let mut value = system::constants::CM_EXE.to_string();
+    |                 ----^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:107:17
+    |
+107 |             let mut value = system::constants::NAC_EXE.to_string();
+    |                 ----^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:111:17
+    |
+111 |             let mut value = system::constants::EVM_EXE.to_string();
+    |                 ----^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:115:17
+    |
+115 |             let mut value = system::constants::FH_EXE.to_string();
+    |                 ----^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:119:17
+    |
+119 |             let mut value = system::constants::DBM_EXE.to_string();
+    |                 ----^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:123:17
+    |
+123 |             let mut value = system::constants::UP_EXE.to_string();
+    |                 ----^^^^^
+    |                 |
+    |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+   --> src/main.rs:235:13
+    |
+235 |         let mut found: u8 = 0;
+    |             ----^^^^^
+    |             |
+    |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src/system/processes.rs:33:17
+   |
+33 |             let mut cmd = p
+   |                 ----^^^
+   |                 |
+   |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src/system/processes.rs:73:17
+   |
+73 |             let mut cmd = p
+   |                 ----^^^
+   |                 |
+   |                 help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> src/system/processes.rs:90:17
+   |
+90 |             let mut cmd = p
+   |                 ----^^^
+   |                 |
+   |                 help: remove this `mut`
+
+warning: method is never used: `create_session_and_channel`
+  --> src/rabbitmq/interaction.rs:81:5
+   |
+81 |     pub fn create_session_and_channel(&mut self) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` on by default
+
+warning: method is never used: `terminate_session_and_channel`
+  --> src/rabbitmq/interaction.rs:99:5
+   |
+99 |     fn terminate_session_and_channel(&mut self) {
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant item is never used: `CLOSE_REPLY_CODE`
+   --> src/rabbitmq/interaction.rs:100:9
+    |
+100 |         const CLOSE_REPLY_CODE: u16 = 200;
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant item is never used: `CLOSE_REPLY_TEXT`
+   --> src/rabbitmq/interaction.rs:101:9
+    |
+101 |         const CLOSE_REPLY_TEXT: &str = "closing producer";
+    |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant item is never used: `QUEUE_URL`
+ --> src/rabbitmq/types.rs:1:1
+  |
+1 | pub const QUEUE_URL: &str = "amqp://guest:guest@localhost:5672/";
+  | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: constant item is never used: `RABBITMQ_SEVERITY`
+  --> src/rabbitmq/types.rs:10:1
+   |
+10 | pub const RABBITMQ_SEVERITY: u16 = 6;
+   | ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method is never used: `exists_in_map`
+   --> src/main.rs:137:5
+    |
+137 |     fn exists_in_map(&mut self, component: &str) -> u8 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method is never used: `get_shutdown`
+   --> src/main.rs:249:5
+    |
+249 |     pub fn get_shutdown(&mut self) -> bool {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: method is never used: `get_event_counter`
+   --> src/main.rs:257:5
+    |
+257 |     pub fn get_event_counter(&mut self) -> u32 {
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: crate `exeSystemProcessor` should have a snake case name
+  |
+  = note: `#[warn(non_snake_case)]` on by default
+  = help: convert the identifier to snake case: `exe_system_processor`
+
+    Finished dev [unoptimized + debuginfo] target(s) in 2.27s

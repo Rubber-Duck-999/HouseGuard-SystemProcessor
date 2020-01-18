@@ -7,9 +7,7 @@ use psutil::process::Process;
 
 use std::process::Command;
 
-
-pub struct Processes {
-}
+pub struct Processes {}
 
 impl Processes {
     pub fn new() -> Processes {
@@ -94,8 +92,7 @@ impl Processes {
             if cmd.contains(component) {
                 warn!("Found Process : Key {}, {}", cmd, component);
                 if found > 0 {
-                    if !self.kill_component_pid(p.pid) {
-                    }
+                    if !self.kill_component_pid(p.pid) {}
                 }
                 found += 1;
             }

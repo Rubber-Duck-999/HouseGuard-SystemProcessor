@@ -65,7 +65,10 @@ impl Control {
         warn!("Looking for {}, exist? {}", shell, exists);
         let mut found = self._process.ps_find(&shell);
         if found == 0 {
-            error!("The component was not alive and we had a shutdown resuest, please debug {}", component);
+            error!(
+                "The component was not alive and we had a shutdown resuest, please debug {}",
+                component
+            );
             let event = rabbitmq::types::EventSyp {
                 severity: 4,
                 error: "Component not alive already - Request.Power".to_string(),
@@ -151,8 +154,7 @@ impl Control {
         let mut exists = Path::new(&shell).exists();
         warn!("Looking for {}, exist? {}", shell, exists);
         if exists {
-            debug!(
-                "The component file does exist: {}", exists);
+            debug!("The component file does exist: {}", exists);
             if restart {
                 self._process.start_process(&shell);
                 let mut found = self._process.ps_find(&shell);
@@ -210,7 +212,10 @@ impl Control {
                     }
                 }
                 if (found < 1) && (message.power == rabbitmq::types::RESTART) {
-                    self.add_components_control(&mut message.component, rabbitmq::types::RESTART_SET);
+                    self.add_components_control(
+                        &mut message.component,
+                        rabbitmq::types::RESTART_SET,
+                    );
                 } else if message.power == rabbitmq::types::SHUTDOWN {
                     self.add_components_shutdown(&mut message.component);
                 }
@@ -297,6 +302,7 @@ fn main() {
 
     let mut control = Control::new();
 
+    /*
     control.add_components_control(system::constants::FH_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);
@@ -308,7 +314,7 @@ fn main() {
     control.add_components_control(system::constants::CM_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::EVM_EXE, rabbitmq::types::RESTART_SET);
-
+    */
     control.control_loop();
 
     process::exit(0);
