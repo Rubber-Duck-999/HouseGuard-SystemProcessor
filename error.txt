@@ -1,1 +1,7 @@
-Run
+error: failed to parse manifest at `/home/ubuntu/environment/HouseGuard-SystemProcessor/Cargo.toml`
+
+Caused by:
+  could not parse input as TOML
+
+Caused by:
+  duplicate key: `psutil` for key `dependencies` at line 22 column 1

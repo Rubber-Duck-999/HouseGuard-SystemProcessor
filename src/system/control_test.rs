@@ -194,10 +194,10 @@ mod tests {
         assert_eq!(controller.get_event_counter(), 0);
     }
 
-    #[test]
+    /*#[test]
     #[should_panic]
     fn no_messages_consume() {
         let mut controller = Control::new();
         assert!(controller.consume_get());
-    }
+    }*/
 }
