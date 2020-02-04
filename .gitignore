@@ -11,3 +11,5 @@
 
 # tox dependencies
 /.tox
+
+*Cargo.lock

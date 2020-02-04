@@ -128,6 +128,7 @@ impl Control {
         } else if component_name == system::constants::COMPONENT_NAME {
             debug!("SYP Found - This initiates shutdown");
             self.set_shutdown();
+            valid = false;
         } else if component_name == system::constants::RABBITMQ {
             debug!("Rabbitmq Found");
         } else {

@@ -154,23 +154,23 @@ impl SessionRabbitmq {
     pub fn consume_get(&mut self, message: &mut types::RequestPower) -> bool {
         let mut valid: bool = false;
         for get_result in self._channel.basic_get("", false) {
-            //warn!("Received: {:?}", String::from_utf8_lossy(&get_result.body));
             if get_result.reply.routing_key.contains(types::REQUEST_POWER) {
                 warn!("Received {}", types::REQUEST_POWER);
 
                 if String::from_utf8_lossy(&get_result.body).contains("power")
                     && String::from_utf8_lossy(&get_result.body).contains("severity")
-                    && String::from_utf8_lossy(&get_result.body).contains("component")
-                {
+                    && String::from_utf8_lossy(&get_result.body).contains("component") {
                     *message =
                         serde_json::from_str(&String::from_utf8_lossy(&get_result.body)).unwrap();
                     if message.power != "" {
                         valid = true;
+                        warn!("Message has been validated");
+                        return valid;
                     }
                 }
             }
             get_result.ack();
         }
-        return valid;
+        return valid
     }
 }
