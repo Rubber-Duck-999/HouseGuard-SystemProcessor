@@ -242,6 +242,7 @@ impl Control {
         for (key, val) in self._component_map.iter() {
             debug!("key: {}, name: {}", key, val);
             let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
+            trace!("{}", &shell.to_string());
             if self._process.ps_find(&shell) < 1 {
                 let serialized = serde_json::to_string(&failure).unwrap();
                 warn!("Publishing a failure message: {}", serialized);
@@ -291,9 +292,9 @@ impl Control {
 }
 
 fn main() {
-    simple_logger::init_with_level(Level::Info).unwrap();
+    simple_logger::init_with_level(Level::Warn).unwrap();
 
-    if log_enabled!(Level::Info) {
+    if log_enabled!(Level::Trace) {
         info!("Logging has been enabled to info");
     }
 
@@ -303,9 +304,9 @@ fn main() {
 
     let mut control = Control::new();
 
-    /*
+    
     control.add_components_control(system::constants::FH_EXE, rabbitmq::types::RESTART_SET);
-
+    /*
     control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::UP_EXE, rabbitmq::types::RESTART_SET);

@@ -7,7 +7,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-psutil = { git = "https://github.com/borntyping/rust-psutil", tag = "v1.7.0" }
+psutil = "2.0.0"
 amqp = "*"
 clap = "*"
 simple_logger = "1.5.0"

@@ -4,6 +4,7 @@ extern crate log;
 extern crate simple_logger;
 
 use psutil::process::Process;
+use psutil::process::processes;
 
 use std::process::Command;
 
@@ -26,15 +27,21 @@ impl Processes {
 
     pub fn ps_find(&mut self, component: &str) -> u16 {
         let mut amount_found: u16 = 0;
-
-        for p in &psutil::process::all().unwrap() {
-            let mut cmd = p
+        warn!("Running");
+        let processes = processes::new();
+        for p in processes {
+            warn!("P {:?}", p.cmdline().unwrap()
+                .unwrap_or_else(|| format!("[{}]", p.name().unwrap())));
+            /*
+            let cmd = p
                 .cmdline()
                 .unwrap()
                 .unwrap_or_else(|| format!("[{}]", p.comm));
-            if cmd.contains(component) {
-                amount_found += 1;
-            }
+            if !cmd.is_empty() {
+                if cmd.contains(component) {
+                    amount_found += 1;
+                }
+            }*/
         }
         warn!("Amount of processes: {}", amount_found);
         return amount_found;
