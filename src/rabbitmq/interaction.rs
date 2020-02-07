@@ -159,7 +159,8 @@ impl SessionRabbitmq {
 
                 if String::from_utf8_lossy(&get_result.body).contains("power")
                     && String::from_utf8_lossy(&get_result.body).contains("severity")
-                    && String::from_utf8_lossy(&get_result.body).contains("component") {
+                    && String::from_utf8_lossy(&get_result.body).contains("component")
+                {
                     *message =
                         serde_json::from_str(&String::from_utf8_lossy(&get_result.body)).unwrap();
                     if message.power != "" {
@@ -171,6 +172,6 @@ impl SessionRabbitmq {
             }
             get_result.ack();
         }
-        return valid
+        return valid;
     }
 }

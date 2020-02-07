@@ -243,13 +243,13 @@ impl Control {
             debug!("key: {}, name: {}", key, val);
             let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
             trace!("{}", &shell.to_string());
-            /*if self._process.ps_find(&shell) < 1 {
+            if self._process.ps_find(&shell) < 1 {
                 let serialized = serde_json::to_string(&failure).unwrap();
                 warn!("Publishing a failure message: {}", serialized);
                 self._channel
                     .publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
                 self._event_counter += 1;
-            }*/
+            }
         }
     }
 
@@ -304,7 +304,6 @@ fn main() {
 
     let mut control = Control::new();
 
-    
     control.add_components_control(system::constants::FH_EXE, rabbitmq::types::RESTART_SET);
     /*
     control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);

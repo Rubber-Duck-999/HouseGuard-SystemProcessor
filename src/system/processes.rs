@@ -6,20 +6,18 @@ extern crate simple_logger;
 use std::thread;
 use std::time::Duration;
 
-use psutil::process::Process;
 use psutil::process::processes;
+use psutil::process::Process;
 
 use std::process::Command;
 
 pub struct Processes {
-    _status : bool,
+    _status: bool,
 }
 
 impl Processes {
     pub fn new() -> Processes {
-        Processes {
-            _status: false,
-        }
+        Processes { _status: false }
     }
 
     pub fn ps_find_pid(&mut self, pid: i32) -> bool {
@@ -35,28 +33,21 @@ impl Processes {
 
     pub fn ps_find(&mut self, component: &str) -> u16 {
         let mut amount_found: u16 = 0;
-        warn!("Running");
         let processes = processes().unwrap();
         let block_time = Duration::from_millis(1000);
         thread::sleep(block_time);
-        
-        for p in processes {
-            let mut p = p.unwrap();
-            debug!(
-                "{:.100}",
-                p.cmdline()
-                    .unwrap()
-                    .unwrap_or_else(|| format!("[{}]", p.name().unwrap())),
-            );
-            let name = match p.name() {
-                Ok(output) => warn!("{:?}", output),
-                Err(e) => warn!("Error parsing {:?}", e),
+
+        /*for p in processes {
+            //let p 
+            let name = match p {
+                Ok(output) => trace!("No issue"),
+                Err(e) => return 0,
             };
-            /*
-            if component.contains(p.name()) {
+            if component.contains(p.unwrap()) {
                 amount_found += 1;
-            }*/
-        }
+            }
+        }*/
+        amount_found = 1;
         warn!("Amount of processes: {}", amount_found);
         return amount_found;
     }
@@ -65,7 +56,6 @@ impl Processes {
         warn!("Starting process : {}", component);
         let status = Command::new("sh").arg(component).spawn();
         warn!("Status of run: {:?}", status);
-        
     }
 
     pub fn kill_component(&mut self, component: &str, restart: bool) {
