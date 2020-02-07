@@ -10,7 +10,10 @@ jobs:
     steps:
     - uses: actions/checkout@v2
     - name: Build
-      run: cargo build --verbose
+      run: |
+           rustc -V
+           cargo -V
+           cargo build --verbose
     - name: Run Audit
       run: |
            cargo install --force cargo-audit
