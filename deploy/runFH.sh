@@ -1,6 +1,6 @@
 #!/bin/sh
 
-echo "Run FH"
+#echo "Run FH"
 while [ true ]
 do
     n=1

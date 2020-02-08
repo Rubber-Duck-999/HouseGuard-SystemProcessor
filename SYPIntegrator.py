@@ -33,7 +33,9 @@ channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_issue)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_failure)
 text = '{ "power":"shutdown", "severity":5, "component": "DBM" }'
 channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
+text = '{ "power":"shutdown", "severity":5, "component": "FH" }'
 channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
+text = '{ "power":"shutdown", "severity":5, "component": "EVM" }'
 channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
 print("Waiting for Messages")
 count = 0
@@ -44,7 +46,7 @@ def callback(ch, method, properties, body):
     print("Count is : ", count)
     time.sleep(0.3)
     text = '{ "power":"shutdown", "severity":5, "component": "SYP" }'
-    if count == 5:
+    if count == 2:
         print("Publishing Message")
         channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
         queue_empty = True

@@ -9,6 +9,8 @@ use std::time::Duration;
 use psutil::process::processes;
 use psutil::process::Process;
 
+use crate::system::constants;
+
 use std::process::Command;
 
 pub struct Processes {
@@ -20,111 +22,184 @@ impl Processes {
         Processes { _status: false }
     }
 
-    pub fn ps_find_pid(&mut self, pid: i32) -> bool {
+    pub fn ps_find_pid(&mut self, pid: u32) -> bool {
         let mut found: bool = false;
-        /*
-        for p in &psutil::process::all().unwrap() {
-            if p.pid == pid {
+        let mut processes_vector = processes();
+        match processes_vector {
+            Ok(output) => trace!("No issue in processes: {:?}", output),
+            Err(e) => return found,
+        };
+        let mut processes = processes().unwrap();
+        let block_time = Duration::from_millis(1000);
+        thread::sleep(block_time);
+
+        for p in processes {
+            if p.is_err() {
+                error!("Crash on p");
+                return found;
+            }
+            let p = p.unwrap();
+            trace!("Creating check of pid");
+            if p.cmdline().is_err() {
+                error!("Cmdline failed");
+                return found;
+            }
+            if p.pid() == pid {
                 found = true;
             }
-        }*/
+        }
         return found;
     }
 
     pub fn ps_find(&mut self, component: &str) -> u16 {
         let mut amount_found: u16 = 0;
-        let processes = processes().unwrap();
+        let mut processes_vector = processes();
+        match processes_vector {
+            Ok(output) => trace!("No issue in processes: {:?}", output),
+            Err(e) => return amount_found,
+        };
+        let mut processes = processes().unwrap();
         let block_time = Duration::from_millis(1000);
         thread::sleep(block_time);
 
-        /*for p in processes {
-            //let p 
-            let name = match p {
-                Ok(output) => trace!("No issue"),
-                Err(e) => return 0,
-            };
-            if component.contains(p.unwrap()) {
+        for p in processes {
+            if p.is_err() {
+                error!("Process failed to unwrap");
+                return amount_found;
+            }
+            let p = p.unwrap();
+            trace!("Creating check of process");
+            if p.cmdline().is_err() {
+                error!("Cmdline failed");
+                return constants::ERROR_FIND;
+            }
+            let process = p
+                .cmdline()
+                .unwrap()
+                .unwrap_or_else(|| format!("[{}]", p.name().unwrap()));
+            if process.contains(component) {
                 amount_found += 1;
             }
-        }*/
+        }
         amount_found = 1;
-        warn!("Amount of processes: {}", amount_found);
+        debug!("Amount of processes: {}", amount_found);
         return amount_found;
     }
 
     pub fn start_process(&mut self, component: &str) {
-        warn!("Starting process : {}", component);
+        debug!("Starting process : {}", component);
         let status = Command::new("sh").arg(component).spawn();
-        warn!("Status of run: {:?}", status);
+        trace!("Status of run: {:?}", status);
     }
 
-    pub fn kill_component(&mut self, component: &str, restart: bool) {
+    pub fn kill_component(&mut self, component: &str, restart: bool) -> bool {
         let found = self.ps_find(component);
+        let mut success: bool = false;
         let result = match found {
             0 => {
-                warn!("No process found");
+                debug!("No process found");
                 if restart {
                     self.start_process(component);
                 }
             }
             1 => {
-                warn!("Component found once");
-                self.kill_main_component(component);
+                debug!("Component found once");
+                success = self.kill_main_component(component);
             }
             _ => {
-                self.kill_duplicate_component(component);
+                success = self.kill_duplicate_component(component);
             }
         };
+        return success;
     }
 
     pub fn kill_main_component(&mut self, component: &str) -> bool {
         let mut success: bool = false;
-        /*
-        for p in &psutil::process::all().unwrap() {
-            let mut cmd = p
+        let mut processes_vector = processes();
+        match processes_vector {
+            Ok(output) => trace!("No issue in processes: {:?}", output),
+            Err(e) => return success,
+        };
+        let mut processes = processes().unwrap();
+        let block_time = Duration::from_millis(1000);
+        thread::sleep(block_time);
+
+        for p in processes {
+            if p.is_err() {
+                error!("How?");
+                return success;
+            }
+            let p = p.unwrap();
+            trace!("Creating check of process");
+            if p.cmdline().is_err() {
+                error!("Cmdline failed");
+                return success;
+            }
+            let process = p
                 .cmdline()
                 .unwrap()
-                .unwrap_or_else(|| format!("[{}]", p.comm));
-            if cmd.contains(component) {
-                warn!("Found Process : Key {}, {}", cmd, component);
-                if !self.kill_component_pid(p.pid) {
+                .unwrap_or_else(|| format!("[{}]", p.name().unwrap()));
+
+            if process.contains(component) {
+                debug!("Found Process : Key {}", component);
+                if !self.kill_component_pid(p.pid()) {
                     success = true;
                 }
             }
-        }*/
+        }
         return success;
     }
 
-    pub fn kill_duplicate_component(&mut self, component: &str) {
+    pub fn kill_duplicate_component(&mut self, component: &str) -> bool {
         let mut found: i32 = 0;
-        /*
-        for p in &psutil::process::all().unwrap() {
-            let mut cmd = p
+        let mut success: bool = false;
+        let mut processes_vector = processes();
+        match processes_vector {
+            Ok(output) => trace!("No issue in processes: {:?}", output),
+            Err(e) => return success,
+        };
+        let mut processes = processes().unwrap();
+        let block_time = Duration::from_millis(1000);
+        thread::sleep(block_time);
+
+        for p in processes {
+            if p.is_err() {
+                error!("How?");
+                return success;
+            }
+            let p = p.unwrap();
+            trace!("Creating check of process");
+            if p.cmdline().is_err() {
+                error!("Cmdline failed");
+                return success;
+            }
+            let process = p
                 .cmdline()
                 .unwrap()
-                .unwrap_or_else(|| format!("[{}]", p.comm));
-            if cmd.contains(component) {
-                warn!("Found Process : Key {}, {}", cmd, component);
+                .unwrap_or_else(|| format!("[{}]", p.name().unwrap()));
+
+            if process.contains(component) {
                 if found > 0 {
-                    if !self.kill_component_pid(p.pid) {}
+                    success = self.kill_component_pid(p.pid());
                 }
                 found += 1;
             }
-        }*/
+        }
+        return success;
     }
 
-    pub fn kill_component_pid(&mut self, component: i32) -> bool {
+    pub fn kill_component_pid(&mut self, component: u32) -> bool {
+        warn!("Killing {}", component);
         let mut error_present: bool = false;
-        /*
         let process = Process::new(component).unwrap();
-        if self.ps_find_pid(process.pid) {
+        if self.ps_find_pid(process.pid()) {
             if let Err(error) = process.kill() {
                 error!("Failed to kill process: {}.", error);
                 error_present = true;
             }
         } else {
             error_present = true;
-        }*/
+        }
         return error_present;
     }
 }

@@ -14,3 +14,4 @@ pub const DBM_EXE: &str = "runDBM.sh";
 pub const NAC_EXE: &str = "runNAC.sh";
 pub const CM_EXE: &str = "runCM.sh";
 pub const EVM_EXE: &str = "runEVM.sh";
+pub const ERROR_FIND: u16 = 2500;

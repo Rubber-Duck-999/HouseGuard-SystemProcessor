@@ -64,7 +64,10 @@ impl Control {
         let mut exists = Path::new(&shell).exists();
         warn!("Looking for {}, exist? {}", shell, exists);
         let mut found = self._process.ps_find(&shell);
-        if found == 0 {
+        if found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&shell);
+        } else if found == 0 {
             error!(
                 "The component was not alive and we had a shutdown resuest, please debug {}",
                 component
@@ -77,9 +80,7 @@ impl Control {
             };
             self.send_event(&event);
         } else {
-            self._process.kill_component(&shell, false);
-            found = self._process.ps_find(&component);
-            if found > 0 {
+            if !self._process.kill_component(&shell, false) {
                 error!("The component will not die, please debug {}", component);
                 let event = rabbitmq::types::EventSyp {
                     severity: 4,
@@ -88,8 +89,16 @@ impl Control {
                     component: system::constants::COMPONENT_NAME.to_string(),
                 };
                 self.send_event(&event);
-                self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
+                self._component_map.insert(self._key, component.to_string());
                 self._key += 1;
+            } else {
+                warn!("{} has been shutdown", component);
+                for (key, val) in self._component_map.iter() {
+                    debug!("key: {}, name: {}", key, val);
+                    if val == component {
+                        self._component_map.insert(key, "");
+                    }
+                }
             }
         }
     }
@@ -159,11 +168,16 @@ impl Control {
             if restart {
                 self._process.start_process(&shell);
                 let mut found = self._process.ps_find(&shell);
+                if found == system::constants::ERROR_FIND {
+                    error!("Find failed to run, retrying");
+                    found = self._process.ps_find(&shell);
+                }
                 warn!("We have found {} processes for {}", found, &shell);
                 if found > 1 {
                     self._process.kill_component(&shell, restart);
                     found = self._process.ps_find(&shell);
                 } else if found != 1 {
+                    warn!("Failed to start up: {}", component);
                     let issue_pre = rabbitmq::types::IssueNotice {
                         severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
                         component: component.to_string(),
@@ -238,11 +252,16 @@ impl Control {
             type_of_failure: "Component died".to_string(),
             severity: rabbitmq::types::RUNTIME_FAILURE,
         };
-        let mut found: u8 = 0;
+        let mut found: u16 = 0;
         for (key, val) in self._component_map.iter() {
-            debug!("key: {}, name: {}", key, val);
+            warn!("key: {}, name: {}", key, val);
             let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
             trace!("{}", &shell.to_string());
+            found = self._process.ps_find(&shell);
+            if found == system::constants::ERROR_FIND {
+                error!("Find failed to run, retrying");
+                found = self._process.ps_find(&shell);
+            }
             if self._process.ps_find(&shell) < 1 {
                 let serialized = serde_json::to_string(&failure).unwrap();
                 warn!("Publishing a failure message: {}", serialized);
@@ -273,7 +292,6 @@ impl Control {
             severity: 0,
             component: "None".to_string(),
         };
-
         while self._shutdown != true {
             if self._channel.consume_get(&mut message) {
                 self.request_check(&mut message);
@@ -305,17 +323,17 @@ fn main() {
     let mut control = Control::new();
 
     control.add_components_control(system::constants::FH_EXE, rabbitmq::types::RESTART_SET);
-    /*
-    control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);
 
+    control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);
+    /*
     control.add_components_control(system::constants::UP_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::NAC_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::CM_EXE, rabbitmq::types::RESTART_SET);
-
-    control.add_components_control(system::constants::EVM_EXE, rabbitmq::types::RESTART_SET);
     */
+    control.add_components_control(system::constants::EVM_EXE, rabbitmq::types::RESTART_SET);
+
     control.control_loop();
 
     process::exit(0);

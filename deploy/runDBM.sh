@@ -1,4 +1,8 @@
 #!/bin/sh
 
-echo "Run DBM"
-#java -jar DBM.jar
+#echo "Run FH"
+while [ true ]
+do
+    n=1
+done
+#exeFaultHandler --f config.yml
