@@ -93,12 +93,26 @@ impl Control {
                 self._key += 1;
             } else {
                 warn!("{} has been shutdown", component);
+                let mut change_key: u16 = 0;
+                let mut key_found: bool = false;
                 for (key, val) in self._component_map.iter() {
                     debug!("key: {}, name: {}", key, val);
                     if val == component {
-                        self._component_map.insert(key, "");
+                        change_key = *key;
+                        key_found = true;
                     }
                 }
+                if key_found {
+                    self._component_map.insert(change_key, "".to_string());
+                }
+                let message = "Component shutdown - Request.Power + ".to_string() + &component.to_string();
+                let event = rabbitmq::types::EventSyp {
+                    severity: 0,
+                    error: message,
+                    time: self.get_time(),
+                    component: system::constants::COMPONENT_NAME.to_string(),
+                };
+                self.send_event(&event);
             }
         }
     }
@@ -254,7 +268,7 @@ impl Control {
         };
         let mut found: u16 = 0;
         for (key, val) in self._component_map.iter() {
-            warn!("key: {}, name: {}", key, val);
+            trace!("key: {}, name: {}", key, val);
             let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
             trace!("{}", &shell.to_string());
             found = self._process.ps_find(&shell);
