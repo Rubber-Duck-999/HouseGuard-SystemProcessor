@@ -69,22 +69,14 @@ impl Control {
             found = self._process.ps_find(&shell);
         } else if found == 0 {
             error!(
-                "The component was not alive and we had a shutdown resuest, please debug {}",
+                "The component was not alive and we had a shutdown request, please debug {}",
                 component
             );
-            let event = rabbitmq::types::EventSyp {
-                severity: 4,
-                error: "Component not alive already - Request.Power".to_string(),
-                time: self.get_time(),
-                component: component.to_string(),
-            };
-            self.send_event(&event);
         } else {
             if !self._process.kill_component(&shell, false) {
                 error!("The component will not die, please debug {}", component);
                 let event = rabbitmq::types::EventSyp {
-                    severity: 4,
-                    error: "Component will not shutdown - Request.Power".to_string(),
+                    message: "Component will not shutdown - Request.Power".to_string(),
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
                 };
@@ -105,10 +97,9 @@ impl Control {
                 if key_found {
                     self._component_map.insert(change_key, "".to_string());
                 }
-                let message = "Component shutdown - Request.Power + ".to_string() + &component.to_string();
+                let msg = "Component shutdown + ".to_string() + &component.to_string();
                 let event = rabbitmq::types::EventSyp {
-                    severity: 0,
-                    error: message,
+                    message: msg,
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
                 };
@@ -192,32 +183,15 @@ impl Control {
                     found = self._process.ps_find(&shell);
                 } else if found != 1 {
                     warn!("Failed to start up: {}", component);
-                    let issue_pre = rabbitmq::types::IssueNotice {
-                        severity: rabbitmq::types::START_UP_FAILURE_SEVERITY,
-                        component: component.to_string(),
-                        action: 0,
-                    };
-                    let issue = serde_json::to_string(&issue_pre).unwrap();
-                    trace!("Serialized: {}", issue);
-                    self._channel.publish(rabbitmq::types::ISSUE_NOTICE, &issue);
-                    self._event_counter += 1;
                     exists = false;
                 }
             }
-        } else {
-            let event = rabbitmq::types::EventSyp {
-                severity: 5,
-                error: "Component File Not Found".to_string(),
-                time: self.get_time(),
-                component: component.to_string(),
-            };
-            self.send_event(&event);
         }
         return exists;
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
-        warn!("Publishing a event message about: {}", message.error);
+        warn!("Publishing a event message about: {}", message.message);
         let serialized = serde_json::to_string(&message).unwrap();
         self._channel
             .publish(rabbitmq::types::EVENT_SYP, &serialized);
@@ -248,14 +222,6 @@ impl Control {
                 } else if message.power == rabbitmq::types::SHUTDOWN {
                     self.add_components_shutdown(&mut message.component);
                 }
-            } else {
-                let event = rabbitmq::types::EventSyp {
-                    severity: 2,
-                    error: "Component Not Found- Request.Power".to_string(),
-                    time: self.get_time(),
-                    component: system::constants::COMPONENT_NAME.to_string(),
-                };
-                self.send_event(&event);
             }
         }
     }
@@ -312,14 +278,6 @@ impl Control {
             }
             self.check_process();
         }
-        trace!("Sending shutdown event...");
-        let event = rabbitmq::types::EventSyp {
-            severity: 6,
-            error: "Component to be shutdown".to_string(),
-            time: self.get_time(),
-            component: system::constants::COMPONENT_NAME.to_string(),
-        };
-        self.send_event(&event);
     }
 }
 
@@ -331,7 +289,7 @@ fn main() {
     }
 
     App::new("exeSystemProcessor")
-        .version("0.0.1")
+        .version("1.2.0")
         .about("The hearbeat and starter for HouseGuard.");
 
     let mut control = Control::new();

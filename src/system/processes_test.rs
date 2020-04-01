@@ -115,7 +115,7 @@ mod tests {
     #[should_panic]
     fn test_error_pid_exist() {
         let mut process_check = Processes::new();
-        let pid: i32 = 5409;
+        let pid: u32 = 5409;
         assert!(process_check.ps_find_pid(pid));
     }
 }

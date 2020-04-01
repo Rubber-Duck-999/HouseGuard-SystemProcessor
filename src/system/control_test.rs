@@ -129,7 +129,7 @@ mod tests {
         let mut controller = Control::new();
         controller.set_shutdown();
         let time = controller.control_loop();
-        assert_eq!(controller.get_event_counter(), 1);
+        assert_eq!(controller.get_event_counter(), 0);
     }
 
     #[test]
@@ -141,7 +141,7 @@ mod tests {
             component: "FH".to_string(),
         };
         controller.request_check(&mut message);
-        assert_eq!(controller.get_event_counter(), 1);
+        assert_eq!(controller.get_event_counter(), 0);
     }
 
     #[test]
@@ -153,7 +153,7 @@ mod tests {
             component: "FAH".to_string(),
         };
         controller.request_check(&mut message);
-        assert_eq!(controller.get_event_counter(), 1);
+        assert_eq!(controller.get_event_counter(), 0);
     }
 
     #[test]
@@ -161,7 +161,7 @@ mod tests {
         let mut controller = Control::new();
         let exists = controller.start("runFAH.sh", false);
         assert_eq!(exists, false);
-        assert_eq!(controller.get_event_counter(), 1);
+        assert_eq!(controller.get_event_counter(), 0);
     }
 
     #[test]

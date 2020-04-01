@@ -81,7 +81,6 @@ impl Processes {
                 amount_found += 1;
             }
         }
-        amount_found = 1;
         debug!("Amount of processes: {}", amount_found);
         return amount_found;
     }

@@ -1,7 +1,6 @@
 pub const QUEUE_URL: &str = "amqp://guest:guest@localhost:5672/";
 pub const EXCHANGE_NAME: &str = "topics";
 pub const REQUEST_POWER: &str = "Request.Power";
-pub const ISSUE_NOTICE: &str = "Issue.Notice";
 pub const EVENT_SYP: &str = "Event.SYP";
 pub const FAILURE_COMPONENT: &str = "Failure.Component";
 
@@ -20,16 +19,8 @@ pub struct RequestPower {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct IssueNotice {
-    pub severity: u16,
-    pub component: String,
-    pub action: u16,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct EventSyp {
-    pub severity: u16,
-    pub error: String,
+    pub message: String,
     pub time: String,
     pub component: String,
 }

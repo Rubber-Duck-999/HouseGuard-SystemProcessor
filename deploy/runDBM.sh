@@ -1,8 +1,8 @@
 #!/bin/sh
 
-#echo "Run FH"
+echo "Run DBM"
 while [ true ]
 do
     n=1
 done
-#exeFaultHandler --f config.yml
+#java -jar DatabaseManager*.jar
