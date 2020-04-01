@@ -1,5 +1,7 @@
 # HouseGuard-SystemProcessor
 
+![Rust](https://github.com/Rubber-Duck-999/HouseGuard-SystemProcessor/workflows/Rust/badge.svg)
+
 HouseGuard-SystemProcessor is a Rust component that is part of the HouseGuard solution.
 
 ## Installation
