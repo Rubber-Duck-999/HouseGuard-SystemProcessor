@@ -171,9 +171,9 @@ impl Control {
         if exists {
             debug!("The component file does exist: {}", exists);
             if restart {
-                self._process.start_process(&shell);
+                //self._process.start_process(&shell);
                 let mut found = self._process.ps_find(&shell);
-                if found == system::constants::ERROR_FIND {
+                while found == system::constants::ERROR_FIND {
                     error!("Find failed to run, retrying");
                     found = self._process.ps_find(&shell);
                 }
@@ -293,19 +293,19 @@ fn main() {
         .about("The hearbeat and starter for HouseGuard.");
 
     let mut control = Control::new();
-
+    /*
     control.add_components_control(system::constants::FH_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);
-    /*
+    
     control.add_components_control(system::constants::UP_EXE, rabbitmq::types::RESTART_SET);
-
+    
     control.add_components_control(system::constants::NAC_EXE, rabbitmq::types::RESTART_SET);
 
     control.add_components_control(system::constants::CM_EXE, rabbitmq::types::RESTART_SET);
-    */
+    
     control.add_components_control(system::constants::EVM_EXE, rabbitmq::types::RESTART_SET);
-
+    */
     control.control_loop();
 
     process::exit(0);
