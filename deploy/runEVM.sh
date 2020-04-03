@@ -1,8 +1,4 @@
 #!/bin/sh
 
-#echo "Run FH"
-while [ true ]
-do
-    n=1
-done
-#exeFaultHandler --f config.yml
+echo "Run EVM"
+./home/simon/Documents/Deploy/exeEnvironmentManager --f EVM.yml

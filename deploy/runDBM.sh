@@ -1,8 +1,4 @@
 #!/bin/sh
 
 echo "Run DBM"
-while [ true ]
-do
-    n=1
-done
-#java -jar DatabaseManager*.jar
+java -jar /home/simon/Documents/Deploy/DatabaseManager*.jar

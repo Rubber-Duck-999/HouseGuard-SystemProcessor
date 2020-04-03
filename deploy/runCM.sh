@@ -1,4 +1,4 @@
 #!/bin/sh
 
 echo "Run FH"
-#exeCameraMonitor --f config.yml
+./home/simon/Documents/Deploy/exeCameraMonitor

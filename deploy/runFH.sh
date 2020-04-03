@@ -1,8 +1,4 @@
 #!/bin/sh
 
-#echo "Run FH"
-while [ true ]
-do
-    n=1
-done
-#exeFaultHandler --f config.yml
+echo "Run FH"
+./home/simon/Documents/Deploy/exeFaultHandler --f FH.yml
