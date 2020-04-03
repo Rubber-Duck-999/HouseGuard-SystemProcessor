@@ -159,7 +159,7 @@ mod tests {
     #[test]
     fn test_start_no_file() {
         let mut controller = Control::new();
-        let exists = controller.start("runFAH.sh", false);
+        let exists = controller.start("runTeest.sh", false);
         assert_eq!(exists, false);
         assert_eq!(controller.get_event_counter(), 0);
     }
@@ -167,14 +167,14 @@ mod tests {
     #[test]
     fn test_start_file_found() {
         let mut controller = Control::new();
-        let exists = controller.start("runFH.sh", false);
+        let exists = controller.start("runTest.sh", false);
         assert_eq!(exists, true);
     }
 
     #[test]
     fn test_start_file_found_and_kill() {
         let mut controller = Control::new();
-        let mut result = "runFH.sh".to_string();
+        let mut result = "runTest.sh".to_string();
         let exists = controller.start(&result, true);
         assert_eq!(exists, true);
 
