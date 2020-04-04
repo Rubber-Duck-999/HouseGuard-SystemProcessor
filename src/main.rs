@@ -238,7 +238,7 @@ impl Control {
             let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
             trace!("{}", &shell.to_string());
             found = self._process.ps_find(&shell);
-            if found == system::constants::ERROR_FIND {
+            while found == system::constants::ERROR_FIND {
                 error!("Find failed to run, retrying");
                 found = self._process.ps_find(&shell);
             }
