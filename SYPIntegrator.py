@@ -20,7 +20,6 @@ connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', 5672
 channel = connection.channel()
 channel.exchange_declare(exchange='topics', exchange_type='topic', durable=True)
 key_publish = 'Request.Power'
-key_issue = 'Issue.Notice'
 key_failure = 'Failure.Component'
 key_event = 'Event.SYP'
 #
@@ -29,7 +28,6 @@ key_event = 'Event.SYP'
 result = channel.queue_declare('', exclusive=False, durable=True)
 queue_name = result.method.queue
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_event)
-channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_issue)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_failure)
 text = '{ "power":"shutdown", "severity":5, "component": "DBM" }'
 channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)

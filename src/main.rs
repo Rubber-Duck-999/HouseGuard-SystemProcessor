@@ -76,7 +76,7 @@ impl Control {
             if !self._process.kill_component(&shell, false) {
                 error!("The component will not die, please debug {}", component);
                 let event = rabbitmq::types::EventSyp {
-                    message: "Component will not shutdown - Request.Power".to_string(),
+                    message: "Component will not shutdown - ".to_string() + &component.to_string(),
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
                 };
@@ -97,13 +97,6 @@ impl Control {
                 if key_found {
                     self._component_map.insert(change_key, "".to_string());
                 }
-                let msg = "Component shutdown + ".to_string() + &component.to_string();
-                let event = rabbitmq::types::EventSyp {
-                    message: msg,
-                    time: self.get_time(),
-                    component: system::constants::COMPONENT_NAME.to_string(),
-                };
-                self.send_event(&event);
             }
         }
     }
@@ -235,7 +228,7 @@ impl Control {
         let mut found: u16 = 0;
         for (key, val) in self._component_map.iter() {
             trace!("key: {}, name: {}", key, val);
-            let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &val.to_owned();
+            let shell = &val.to_owned();
             trace!("{}", &shell.to_string());
             found = self._process.ps_find(&shell);
             while found == system::constants::ERROR_FIND {
