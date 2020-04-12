@@ -8,6 +8,8 @@ use std::process;
 extern crate chrono;
 use chrono::prelude::*;
 
+use std::{thread, time};
+
 #[macro_use]
 extern crate log;
 extern crate simple_logger;
@@ -21,255 +23,247 @@ use std::path::Path;
 extern crate serde_derive;
 extern crate serde;
 extern crate serde_json;
+extern crate system_shutdown;
+
+use system_shutdown::shutdown;
 
 struct Control {
-    _component_map: HashMap<u16, String>,
     _process: system::processes::Processes,
     _channel: rabbitmq::interaction::SessionRabbitmq,
     _shutdown: bool,
-    _key: u16,
     _event_counter: u32,
+    _userPanel: bool,
+    _faultHandler: bool,
+    _databaseManager: bool,
+    _cameraMonitor: bool,
+    _environmentManager: bool,
+    _networkAccessController: bool,
+    _sql: bool,
+    _rabbitmq: bool,
 }
 
 impl Control {
     pub fn new() -> Control {
         Control {
-            _component_map: HashMap::new(),
             _process: system::processes::Processes::new(),
             _channel: rabbitmq::interaction::SessionRabbitmq {
                 ..Default::default()
             },
             _shutdown: false,
-            _key: 0,
             _event_counter: 0,
+            _userPanel: false,
+            _faultHandler: false,
+            _databaseManager: false,
+            _cameraMonitor: false,
+            _environmentManager: false,
+            _networkAccessController: false,
+            _sql: false,
+            _rabbitmq: false,
         }
     }
 
-    pub fn add_components_control(&mut self, component: &str, restart: bool) {
-        trace!("Adding component to control map");
-        if !self.start(component, restart) {
-            error!(
-                "The component will not start up, please debug {}",
-                component
-            );
+    fn publish_failure_component(&mut self, component: &str) -> bool {
+        if self._rabbitmq == false {
+            let failure = rabbitmq::types::FailureComponent {
+                time: self.get_time(),
+                type_of_failure: component.to_string(),
+            };
+            self._channel.publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
+            self._event_counter += 1;
         } else {
-            self._component_map.insert(self._key, component.to_string()); // inserting moves `node`
-            self._key += 1;
+            error!("Rabbitmq has not been running, cannot send message");
         }
     }
 
-    pub fn add_components_shutdown(&mut self, component: &str) {
-        trace!("Adding component to control map");
-        let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
-        let mut exists = Path::new(&shell).exists();
-        warn!("Looking for {}, exist? {}", shell, exists);
-        let mut found = self._process.ps_find(&shell);
-        if found == system::constants::ERROR_FIND {
+    fn check_user_panel(&mut self) {
+        let component = "UserPanel";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
             error!("Find failed to run, retrying");
-            found = self._process.ps_find(&shell);
-        } else if found == 0 {
-            error!(
-                "The component was not alive and we had a shutdown request, please debug {}",
-                component
-            );
-        } else {
-            if !self._process.kill_component(&shell, false) {
-                error!("The component will not die, please debug {}", component);
-                let event = rabbitmq::types::EventSyp {
-                    message: "Component will not shutdown - ".to_string() + &component.to_string(),
-                    time: self.get_time(),
-                    component: system::constants::COMPONENT_NAME.to_string(),
-                };
-                self.send_event(&event);
-                self._component_map.insert(self._key, component.to_string());
-                self._key += 1;
-            } else {
-                warn!("{} has been shutdown", component);
-                let mut change_key: u16 = 0;
-                let mut key_found: bool = false;
-                for (key, val) in self._component_map.iter() {
-                    debug!("key: {}, name: {}", key, val);
-                    if val == component {
-                        change_key = *key;
-                        key_found = true;
-                    }
-                }
-                if key_found {
-                    self._component_map.insert(change_key, "".to_string());
-                }
-            }
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 && self._userPanel == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::USER_PANEL);
+            self._userPanel = false;
+        } else if found == 0 && self._userPanel != true {
+            warn!("The component is still dead {}", component);
+        }
+        else {
+            self._userPanel = true;
         }
     }
 
-    fn get_time(&mut self) -> String {
-        let dt = Utc.ymd(2020, 01, 01).and_hms(12, 0, 9);
-        return dt.format("%Y-%m-%d %H:%M:%S").to_string();
-    }
-
-    fn switch_names(&mut self, component_name: &mut String) -> bool {
-        let mut valid: bool = true;
-        if component_name == system::constants::CAMERA_MONITOR {
-            debug!("CM Found");
-            let mut value = system::constants::CM_EXE.to_string();
-            *component_name = value;
-        } else if component_name == system::constants::NETWORK_ACCESS_CONTROLLER {
-            debug!("NAC Found");
-            let mut value = system::constants::NAC_EXE.to_string();
-            *component_name = value;
-        } else if component_name == system::constants::ENVIRONMENT_MANAGER {
-            debug!("EVM Found");
-            let mut value = system::constants::EVM_EXE.to_string();
-            *component_name = value;
-        } else if component_name == system::constants::FAULT_HANDLER {
-            debug!("FH Found");
-            let mut value = system::constants::FH_EXE.to_string();
-            *component_name = value;
-        } else if component_name == system::constants::DATABASE_MANAGER {
-            debug!("DBM Found");
-            let mut value = system::constants::DBM_EXE.to_string();
-            *component_name = value;
-        } else if component_name == system::constants::USER_PANEL {
-            debug!("UP Found");
-            let mut value = system::constants::UP_EXE.to_string();
-            *component_name = value;
-        } else if component_name == system::constants::COMPONENT_NAME {
-            debug!("SYP Found - This initiates shutdown");
-            self.set_shutdown();
-            valid = false;
-        } else if component_name == system::constants::RABBITMQ {
-            debug!("Rabbitmq Found");
-        } else {
-            debug!("Not sure what this is: {}", component_name);
-            valid = false;
+    fn check_camera_monitor(&mut self) {
+        let component = "exeCameraMonitor";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
         }
-        return valid;
-    }
-
-    fn exists_in_map(&mut self, component: &str) -> u8 {
-        warn!("Looking for {}", component);
-        let mut found: u8 = 0;
-        for (key, val) in self._component_map.iter() {
-            debug!("key: {}, name: {}", key, val);
-            if val == component {
-                found = found + 1;
-            }
+        if found == 0 && self._cameraMonitor == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::CAMERA_MONITOR);
+            self._cameraMonitor = false;
+        } else if found == 0 && self._cameraMonitor != true {
+            warn!("The component is still dead, please debug {}", component);
         }
-        return found;
+        else {
+            self._cameraMonitor = true;
+        }      
     }
 
-    fn start(&mut self, component: &str, restart: bool) -> bool {
-        let shell = system::constants::DEPLOY_SCRIPTS.to_owned() + &component.to_owned();
-        let mut exists = Path::new(&shell).exists();
-        warn!("Looking for {}, exist? {}", shell, exists);
-        if exists {
-            debug!("The component file does exist: {}", exists);
-            if restart {
-                //self._process.start_process(&shell);
-                let mut found = self._process.ps_find(&shell);
-                while found == system::constants::ERROR_FIND {
-                    error!("Find failed to run, retrying");
-                    found = self._process.ps_find(&shell);
-                }
-                warn!("We have found {} processes for {}", found, &shell);
-                if found > 1 {
-                    self._process.kill_component(&shell, restart);
-                    found = self._process.ps_find(&shell);
-                } else if found != 1 {
-                    warn!("Failed to start up: {}", component);
-                    exists = false;
+    fn check_fault_handler(&mut self) {
+        let component = "exeFaultHandler";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 {
+            error!("Fault handler is not alive, we should restart the system");
+            warn!("Rerunning find to ensure its definitely not a failure");
+            if(self._process.ps_find(&component) == 0)
+            {
+                self._faultHandler = false;
+                match reboot() {
+                    Ok(_) => println!("Rebooting ..."),
+                    Err(error) => eprintln!("Failed to reboot: {}", error),
                 }
             }
         }
-        return exists;
+    }
+
+    fn check_network_access_controller(&mut self) {
+        let component = "exeNetworkAccessController";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 && self._networkAccessController == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
+            self._networkAccessController = false;
+        } else if found == 0 && self._networkAccessController != true {
+            warn!("The component is still dead {}", component);
+        }
+        else {
+            self._networkAccessController = true;
+        }
+        return self._networkAccessController;
+    }
+
+    fn check_environment_manager(&mut self) {
+        let component = "exeEnvironmentManager";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 && self._environmentManager == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
+            self._environmentManager = false;
+        } else if found == 0 && self._environmentManager != true {
+            warn!("The component is still dead {}", component);
+        }
+        else {
+            debug!("The component is alive {}", component);
+            self._environmentManager = true;
+        }      
+    }
+
+    fn check_database_manager(&mut self) {
+        let component = "DatabaseManager";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 && self._databaseManager == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::DATABASE_MANAGER);
+            self._databaseManager = false;
+        } else if found == 0 && self._databaseManager != true {
+            warn!("The component is still dead {}", component);
+        }
+        else {
+            debug!("The component is alive {}", component);
+            self._databaseManager = true;
+        }      
+    }
+
+    fn check_sql(&mut self) {
+        let component = "mysql";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 && self._sql == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::SQL);
+            self._sql = false;
+        } else if found == 0 && self._sql != true {
+            warn!("The component is still dead {}", component);
+        }
+        else {
+            debug!("The component is alive {}", component);
+            self._sql = true;
+        }
+    }
+
+    fn check_rabbitmq(&mut self) {
+        let component = "rabbitmq";
+        debug!("Looking for {}", component);
+        let mut found = self._process.ps_find(&component); 
+        while found == system::constants::ERROR_FIND {
+            error!("Find failed to run, retrying");
+            found = self._process.ps_find(&component);
+        }
+        if found == 0 && self._rabbitmq == true {
+            error!("The component was not alive, please debug {}", component);
+            publish_failure_component(system::constants::SQL);
+            self._rabbitmq = false;
+        } else if found == 0 && self._rabbitmq != true {
+            warn!("The component is still dead {}", component);
+        }
+        else {
+            debug!("The component is alive {}", component);
+            self._rabbitmq = true;
+        }
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
         warn!("Publishing a event message about: {}", message.message);
         let serialized = serde_json::to_string(&message).unwrap();
-        self._channel
-            .publish(rabbitmq::types::EVENT_SYP, &serialized);
+        self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
         self._event_counter += 1;
-    }
-
-    fn request_check(&mut self, message: &mut rabbitmq::types::RequestPower) {
-        let mut found: u8 = 0;
-        warn!(
-            "Power request for {} to be {}",
-            message.component, message.power
-        );
-        let valid = self.switch_names(&mut message.component);
-        if message.component != system::constants::COMPONENT_NAME {
-            if valid {
-                for (key, val) in self._component_map.iter() {
-                    debug!("key: {}, name: {}", key, val);
-                    if val.contains(&message.component) {
-                        debug!("Found Component : {}", message.component);
-                        found = found + 1;
-                    }
-                }
-                if (found < 1) && (message.power == rabbitmq::types::RESTART) {
-                    self.add_components_control(
-                        &mut message.component,
-                        rabbitmq::types::RESTART_SET,
-                    );
-                } else if message.power == rabbitmq::types::SHUTDOWN {
-                    self.add_components_shutdown(&mut message.component);
-                }
-            }
-        }
-    }
-
-    fn check_process(&mut self) {
-        let failure = rabbitmq::types::FailureComponent {
-            time: self.get_time(),
-            type_of_failure: "Component died".to_string(),
-            severity: rabbitmq::types::RUNTIME_FAILURE,
-        };
-        let mut found: u16 = 0;
-        for (key, val) in self._component_map.iter() {
-            trace!("key: {}, name: {}", key, val);
-            let shell = &val.to_owned();
-            trace!("{}", &shell.to_string());
-            found = self._process.ps_find(&shell);
-            while found == system::constants::ERROR_FIND {
-                error!("Find failed to run, retrying");
-                found = self._process.ps_find(&shell);
-            }
-            if self._process.ps_find(&shell) < 1 {
-                let serialized = serde_json::to_string(&failure).unwrap();
-                warn!("Publishing a failure message: {}", serialized);
-                self._channel
-                    .publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
-                self._event_counter += 1;
-            }
-        }
-    }
-
-    pub fn get_shutdown(&mut self) -> bool {
-        return self._shutdown;
-    }
-
-    pub fn set_shutdown(&mut self) {
-        self._shutdown = true;
-    }
-
-    pub fn get_event_counter(&mut self) -> u32 {
-        return self._event_counter;
     }
 
     fn control_loop(&mut self) {
         trace!("Declaring consumer...");
         self._channel.consume();
-        let mut message = rabbitmq::types::RequestPower {
-            power: rabbitmq::types::SHUTDOWN.to_string(),
-            severity: 0,
-            component: "None".to_string(),
-        };
+        thread::sleep(time::Duration::from_secs(5));
         while self._shutdown != true {
-            if self._channel.consume_get(&mut message) {
-                self.request_check(&mut message);
-            }
-            self.check_process();
+            thread::sleep(time::Duration::from_secs(5));
+            check_rabbitmq();
+            check_fault_handler();
+            thread::sleep(time::Duration::from_secs(5));
+            check_sql();
+            check_database_manager();
+            check_environment_manager();
+            check_network_access_controller();
+            check_camera_monitor();
+            check_user_panel();
         }
     }
 }
@@ -283,22 +277,10 @@ fn main() {
 
     App::new("exeSystemProcessor")
         .version("1.2.0")
-        .about("The hearbeat and starter for HouseGuard.");
+        .about("The hearbeat and monitor for HouseGuard.");
 
     let mut control = Control::new();
-    /*
-    control.add_components_control(system::constants::FH_EXE, rabbitmq::types::RESTART_SET);
 
-    control.add_components_control(system::constants::DBM_EXE, rabbitmq::types::RESTART_SET);
-    
-    control.add_components_control(system::constants::UP_EXE, rabbitmq::types::RESTART_SET);
-    
-    control.add_components_control(system::constants::NAC_EXE, rabbitmq::types::RESTART_SET);
-
-    control.add_components_control(system::constants::CM_EXE, rabbitmq::types::RESTART_SET);
-    
-    control.add_components_control(system::constants::EVM_EXE, rabbitmq::types::RESTART_SET);
-    */
     control.control_loop();
 
     process::exit(0);

@@ -1,17 +1,10 @@
-pub const CAMERA_MONITOR: &str = "CM";
-pub const NETWORK_ACCESS_CONTROLLER: &str = "NAC";
-pub const ENVIRONMENT_MANAGER: &str = "EVM";
-pub const FAULT_HANDLER: &str = "FH";
-pub const DATABASE_MANAGER: &str = "DBM";
-pub const USER_PANEL: &str = "UP";
-pub const COMPONENT_NAME: &str = "SYP";
+pub const CAMERA_MONITOR: &str = "CM has died";
+pub const NETWORK_ACCESS_CONTROLLER: &str = "NAC has died";
+pub const ENVIRONMENT_MANAGER: &str = "EVM has died";
+pub const FAULT_HANDLER: &str = "FH has died";
+pub const DATABASE_MANAGER: &str = "DBM has died";
+pub const USER_PANEL: &str = "UP has died";
+pub const COMPONENT_NAME: &str = "SYP has died";
+pub const SQL: &str = "SQL has died;"
 pub const RABBITMQ: &str = "RMQ";
-
-pub const DEPLOY_SCRIPTS: &str = "/home/simon/Documents/Deploy/";
-pub const FH_EXE: &str = "exeFaultHandler";
-pub const UP_EXE: &str = "UserPanel-0.0.2.jar";
-pub const DBM_EXE: &str = "DatabaseManager-0.0.2.jar";
-pub const NAC_EXE: &str = "exeNetworkAccessController";
-pub const CM_EXE: &str = "exeCameraMonitor";
-pub const EVM_EXE: &str = "exeEnvironmentManager";
 pub const ERROR_FIND: u16 = 2500;
