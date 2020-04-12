@@ -16,7 +16,9 @@ extern crate simple_logger;
 
 use log::Level;
 
-use std::path::Path;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::prelude::*;
 
 #[macro_use]
 extern crate serde_derive;
@@ -77,6 +79,18 @@ impl Control {
             self._event_counter += 1;
         } else {
             error!("Rabbitmq has not been running, cannot send message");
+        }
+    }
+
+    fn check_file(&mut self, file: &str, text: &str) -> bool {
+        let file = File::open(file)?;
+        let mut buf_reader = BufReader::new(file);
+        let mut contents = String::new();
+        buf_reader.read_to_string(&mut contents)?;
+        if contents.contains(text) {
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -195,6 +209,9 @@ impl Control {
             error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::DATABASE_MANAGER);
             self._databaseManager = false;
+            if check_file("/home/simon/Documents/Deploy/logs/DBM.txt", "Exception") {
+                error!("Log file exists and a exception occured");
+            }
         } else if found == 0 && self._databaseManager != true {
             warn!("The component is still dead {}", component);
         }
@@ -280,6 +297,8 @@ impl Control {
             self.check_network_access_controller();
             self.check_camera_monitor();
             self.check_user_panel();
+            self._process.get_disk_usage();
+
         }
     }
 }
