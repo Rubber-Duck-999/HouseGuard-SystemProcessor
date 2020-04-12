@@ -151,6 +151,7 @@ impl SessionRabbitmq {
         warn!("[{} Consumer ] Created.", "");
     }
 
+    /*
     pub fn consume_get(&mut self, message: &mut types::RequestPower) -> bool {
         let mut valid: bool = false;
         for get_result in self._channel.basic_get("", false) {
@@ -173,5 +174,5 @@ impl SessionRabbitmq {
             get_result.ack();
         }
         return valid;
-    }
+    }*/
 }

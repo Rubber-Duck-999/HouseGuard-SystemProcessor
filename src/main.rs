@@ -16,7 +16,6 @@ extern crate simple_logger;
 
 use log::Level;
 
-use std::collections::HashMap;
 use std::path::Path;
 
 #[macro_use]
@@ -62,12 +61,13 @@ impl Control {
         }
     }
 
-    fn publish_failure_component(&mut self, component: &str) -> bool {
+    fn self.publish_failure_component(&mut self, component: &str) -> bool {
         if self._rabbitmq == false {
             let failure = rabbitmq::types::FailureComponent {
                 time: self.get_time(),
                 type_of_failure: component.to_string(),
             };
+            let serialized = serde_json::to_string(&failure).unwrap();
             self._channel.publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
             self._event_counter += 1;
         } else {
@@ -85,7 +85,7 @@ impl Control {
         }
         if found == 0 && self._userPanel == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::USER_PANEL);
+            self.publish_failure_component(system::constants::USER_PANEL);
             self._userPanel = false;
         } else if found == 0 && self._userPanel != true {
             warn!("The component is still dead {}", component);
@@ -105,7 +105,7 @@ impl Control {
         }
         if found == 0 && self._cameraMonitor == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::CAMERA_MONITOR);
+            self.publish_failure_component(system::constants::CAMERA_MONITOR);
             self._cameraMonitor = false;
         } else if found == 0 && self._cameraMonitor != true {
             warn!("The component is still dead, please debug {}", component);
@@ -147,7 +147,7 @@ impl Control {
         }
         if found == 0 && self._networkAccessController == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
+            self.publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
             self._networkAccessController = false;
         } else if found == 0 && self._networkAccessController != true {
             warn!("The component is still dead {}", component);
@@ -168,7 +168,7 @@ impl Control {
         }
         if found == 0 && self._environmentManager == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
+            self.publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
             self._environmentManager = false;
         } else if found == 0 && self._environmentManager != true {
             warn!("The component is still dead {}", component);
@@ -189,7 +189,7 @@ impl Control {
         }
         if found == 0 && self._databaseManager == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::DATABASE_MANAGER);
+            self.publish_failure_component(system::constants::DATABASE_MANAGER);
             self._databaseManager = false;
         } else if found == 0 && self._databaseManager != true {
             warn!("The component is still dead {}", component);
@@ -210,7 +210,7 @@ impl Control {
         }
         if found == 0 && self._sql == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::SQL);
+            self.publish_failure_component(system::constants::SQL);
             self._sql = false;
         } else if found == 0 && self._sql != true {
             warn!("The component is still dead {}", component);
@@ -231,7 +231,7 @@ impl Control {
         }
         if found == 0 && self._rabbitmq == true {
             error!("The component was not alive, please debug {}", component);
-            publish_failure_component(system::constants::SQL);
+            self.publish_failure_component(system::constants::SQL);
             self._rabbitmq = false;
         } else if found == 0 && self._rabbitmq != true {
             warn!("The component is still dead {}", component);
@@ -255,15 +255,15 @@ impl Control {
         thread::sleep(time::Duration::from_secs(5));
         while self._shutdown != true {
             thread::sleep(time::Duration::from_secs(5));
-            check_rabbitmq();
-            check_fault_handler();
+            self.check_rabbitmq();
+            self.check_fault_handler();
             thread::sleep(time::Duration::from_secs(5));
-            check_sql();
-            check_database_manager();
-            check_environment_manager();
-            check_network_access_controller();
-            check_camera_monitor();
-            check_user_panel();
+            self.check_sql();
+            self.check_database_manager();
+            self.check_environment_manager();
+            self.check_network_access_controller();
+            self.check_camera_monitor();
+            self.check_user_panel();
         }
     }
 }
