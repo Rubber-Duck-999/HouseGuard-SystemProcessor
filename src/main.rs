@@ -61,7 +61,12 @@ impl Control {
         }
     }
 
-    fn publish_failure_component(&mut self, component: &str) -> bool {
+    fn get_time(&mut self) -> String {
+        let dt = Utc.ymd(2020, 01, 01).and_hms(12, 0, 9);
+        return dt.format("%Y-%m-%d %H:%M:%S").to_string();
+    }
+
+    fn publish_failure_component(&mut self, component: &str) {
         if self._rabbitmq == false {
             let failure = rabbitmq::types::FailureComponent {
                 time: self.get_time(),
@@ -108,7 +113,7 @@ impl Control {
             self.publish_failure_component(system::constants::CAMERA_MONITOR);
             self._cameraMonitor = false;
         } else if found == 0 && self._cameraMonitor != true {
-            warn!("The component is still dead, please debug {}", component);
+            warn!("The component is still dead {}", component);
         }
         else {
             self._cameraMonitor = true;
@@ -129,7 +134,7 @@ impl Control {
             if(self._process.ps_find(&component) == 0)
             {
                 self._faultHandler = false;
-                match reboot() {
+                match system_shutdown::reboot() {
                     Ok(_) => println!("Rebooting ..."),
                     Err(error) => eprintln!("Failed to reboot: {}", error),
                 }
@@ -146,7 +151,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._networkAccessController == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive, {}", component);
             self.publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
             self._networkAccessController = false;
         } else if found == 0 && self._networkAccessController != true {
@@ -155,7 +160,6 @@ impl Control {
         else {
             self._networkAccessController = true;
         }
-        return self._networkAccessController;
     }
 
     fn check_environment_manager(&mut self) {
@@ -167,7 +171,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._environmentManager == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
             self._environmentManager = false;
         } else if found == 0 && self._environmentManager != true {
@@ -188,7 +192,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._databaseManager == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::DATABASE_MANAGER);
             self._databaseManager = false;
         } else if found == 0 && self._databaseManager != true {
@@ -209,7 +213,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._sql == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::SQL);
             self._sql = false;
         } else if found == 0 && self._sql != true {
@@ -230,7 +234,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._rabbitmq == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::SQL);
             self._rabbitmq = false;
         } else if found == 0 && self._rabbitmq != true {
@@ -247,6 +251,18 @@ impl Control {
         let serialized = serde_json::to_string(&message).unwrap();
         self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
         self._event_counter += 1;
+    }
+
+    pub fn get_shutdown(&mut self) -> bool {
+        return self._shutdown;
+    }
+
+    pub fn set_shutdown(&mut self) {
+        self._shutdown = true;
+    }
+
+    pub fn get_event_counter(&mut self) -> u32 {
+        return self._event_counter;
     }
 
     pub fn control_loop(&mut self) {
@@ -272,7 +288,7 @@ fn main() {
     simple_logger::init_with_level(Level::Warn).unwrap();
 
     if log_enabled!(Level::Trace) {
-        info!("Logging has been enabled to info");
+        info!("Logging has been enabled to trace");
     }
 
     App::new("exeSystemProcessor")

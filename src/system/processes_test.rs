@@ -30,7 +30,7 @@ mod tests {
     #[test]
     fn test_start_process() {
         let mut process_check = Processes::new();
-        let test_runner_sh = constants::DEPLOY_SCRIPTS.to_owned() + &constants::FH_EXE.to_owned();
+        let test_runner_sh = "./deploy/runFH.sh";
         process_check.start_process(&test_runner_sh);
         let mut found = process_check.ps_find(&test_runner_sh);
         process_check.kill_main_component(&test_runner_sh);
