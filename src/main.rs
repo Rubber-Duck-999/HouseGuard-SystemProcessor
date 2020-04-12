@@ -61,7 +61,7 @@ impl Control {
         }
     }
 
-    fn self.publish_failure_component(&mut self, component: &str) -> bool {
+    fn publish_failure_component(&mut self, component: &str) -> bool {
         if self._rabbitmq == false {
             let failure = rabbitmq::types::FailureComponent {
                 time: self.get_time(),
@@ -249,7 +249,7 @@ impl Control {
         self._event_counter += 1;
     }
 
-    fn control_loop(&mut self) {
+    pub fn control_loop(&mut self) {
         trace!("Declaring consumer...");
         self._channel.consume();
         thread::sleep(time::Duration::from_secs(5));
