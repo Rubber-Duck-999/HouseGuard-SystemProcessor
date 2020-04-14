@@ -5,6 +5,8 @@ use clap::App;
 
 use std::process;
 
+use std::ffi::{OsString, OsStr};
+
 extern crate chrono;
 use chrono::prelude::*;
 
@@ -16,7 +18,7 @@ extern crate simple_logger;
 
 use log::Level;
 
-use std::fs::File;
+use std::fs;
 use std::io::BufReader;
 use std::io::prelude::*;
 
@@ -27,6 +29,13 @@ extern crate serde_json;
 extern crate system_shutdown;
 
 use system_shutdown::shutdown;
+
+extern crate glob;
+
+use glob::glob;
+use std::error::Error;
+
+use std::env;
 
 struct Control {
     _process: system::processes::Processes,
@@ -52,15 +61,40 @@ impl Control {
             },
             _shutdown: false,
             _event_counter: 0,
-            _userPanel: false,
-            _faultHandler: false,
-            _databaseManager: false,
-            _cameraMonitor: false,
-            _environmentManager: false,
-            _networkAccessController: false,
-            _sql: false,
-            _rabbitmq: false,
+            _userPanel: true,
+            _faultHandler: true,
+            _databaseManager: true,
+            _cameraMonitor: true,
+            _environmentManager: true,
+            _networkAccessController: true,
+            _sql: true,
+            _rabbitmq: true,
         }
+    }
+
+    fn get_cwd(&mut self) -> std::io::Result<()> {
+        let path = env::current_dir()?;
+        debug!("The current directory is {}", path.display());
+        Ok(())
+    }
+
+    fn get_status_update(&mut self) {
+        let disk:system::processes::disk_hw = self._process.get_disk_usage();
+        let count = self.find_jpg().unwrap_or(0);
+        warn!("Whilst looking for images, we found {:?} images", count);
+        self.get_cwd();
+    }
+    
+    fn find_jpg(&mut self) -> Result<u16, Box<dyn Error>> {
+        trace!("Looking for jpg files");
+        let mut count: u16 = 0;
+        for entry in glob("**/*.jpg")? {
+            debug!("{}", entry?.display());
+            count += 1;
+        }
+        debug!("Files found {}", count);
+    
+        Ok(count)
     }
 
     fn get_time(&mut self) -> String {
@@ -69,7 +103,7 @@ impl Control {
     }
 
     fn publish_failure_component(&mut self, component: &str) {
-        if self._rabbitmq == false {
+        if self._rabbitmq == true {
             let failure = rabbitmq::types::FailureComponent {
                 time: self.get_time(),
                 type_of_failure: component.to_string(),
@@ -82,12 +116,16 @@ impl Control {
         }
     }
 
-    fn check_file(&mut self, file: &str, text: &str) -> bool {
-        let file = File::open(file)?;
-        let mut buf_reader = BufReader::new(file);
-        let mut contents = String::new();
-        buf_reader.read_to_string(&mut contents)?;
-        if contents.contains(text) {
+    fn check_file(&mut self, file: &str) -> bool {
+        debug!("Checking file exists {}", file);
+        let _b = std::path::Path::new(file).exists();
+        return _b;
+    }
+
+    fn compare(&mut self, file: &str, text: &str) -> bool {
+        debug!("Comparing file");
+        let data = fs::read_to_string(file).expect("Unable to read file");
+        if data.contains(text) {
             return true;
         } else {
             return false;
@@ -103,7 +141,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._userPanel == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive please debug {}", component);
             self.publish_failure_component(system::constants::USER_PANEL);
             self._userPanel = false;
         } else if found == 0 && self._userPanel != true {
@@ -123,7 +161,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._cameraMonitor == true {
-            error!("The component was not alive, please debug {}", component);
+            error!("The component was not alive please debug {}", component);
             self.publish_failure_component(system::constants::CAMERA_MONITOR);
             self._cameraMonitor = false;
         } else if found == 0 && self._cameraMonitor != true {
@@ -144,14 +182,15 @@ impl Control {
         }
         if found == 0 {
             error!("Fault handler is not alive, we should restart the system");
-            warn!("Rerunning find to ensure its definitely not a failure");
+            debug!("Rerunning find to ensure its definitely not a failure");
             if(self._process.ps_find(&component) == 0)
             {
                 self._faultHandler = false;
-                match system_shutdown::reboot() {
+                error!("Shutdown system");
+                /*match system_shutdown::reboot() {
                     Ok(_) => println!("Rebooting ..."),
                     Err(error) => eprintln!("Failed to reboot: {}", error),
-                }
+                }*/
             }
         }
     }
@@ -165,7 +204,7 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._networkAccessController == true {
-            error!("The component was not alive, {}", component);
+            error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
             self._networkAccessController = false;
         } else if found == 0 && self._networkAccessController != true {
@@ -209,8 +248,10 @@ impl Control {
             error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::DATABASE_MANAGER);
             self._databaseManager = false;
-            if check_file("/home/simon/Documents/Deploy/logs/DBM.txt", "Exception") {
-                error!("Log file exists and a exception occured");
+            if self.check_file("/home/simon/Documents/Deploy/logs/DBM.txt") {
+                if self.compare("/home/simon/Documents/Deploy/logs/DBM.txt", "Exception") {
+                    error!("Log file exists and a exception occured");
+                }
             }
         } else if found == 0 && self._databaseManager != true {
             warn!("The component is still dead {}", component);
@@ -297,8 +338,7 @@ impl Control {
             self.check_network_access_controller();
             self.check_camera_monitor();
             self.check_user_panel();
-            self._process.get_disk_usage();
-
+            self.get_status_update();
         }
     }
 }

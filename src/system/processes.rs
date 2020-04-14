@@ -15,6 +15,11 @@ use crate::system::constants;
 
 use std::process::Command;
 
+pub struct disk_hw {
+    pub _percentage_usage: f32,
+    pub _uptime: u64,
+}
+
 pub struct Processes {
     _status: bool,
 }
@@ -87,12 +92,19 @@ impl Processes {
         return amount_found;
     }
 
-    pub fn get_disk_usage() {
+    pub fn get_disk_usage(&mut self) -> disk_hw{
         let disk_usage = disk::disk_usage("/").unwrap();
-        debug!("Disk usage: {}", disk_usage);
-        let uptime = host::uptime().unwrap();
-        debug!("System uptime: {}", uptime);
+        debug!("Disk usage: {:?}", disk_usage);
+        let percentage = disk_usage.percent();
+        debug!("Disk usage %: {:?}", percentage);
+        let uptime = host::uptime().unwrap().as_secs();
+        debug!("System uptime: {:?}", uptime);
         let temperatures = sensors::temperatures();
-        debug!("System temperature: {}", temperatures);
+        debug!("System temperature: {:?}", temperatures);
+        let temp = disk_hw {
+            _percentage_usage: percentage,
+            _uptime: uptime,
+        };
+        return temp;
     }
 }

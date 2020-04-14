@@ -19,7 +19,6 @@ credentials = pika.PlainCredentials('guest', 'password')
 connection = pika.BlockingConnection(pika.ConnectionParameters('localhost', 5672, '/', credentials))
 channel = connection.channel()
 channel.exchange_declare(exchange='topics', exchange_type='topic', durable=True)
-key_publish = 'Request.Power'
 key_failure = 'Failure.Component'
 key_event = 'Event.SYP'
 #
@@ -27,27 +26,17 @@ key_event = 'Event.SYP'
 # Publishing
 result = channel.queue_declare('', exclusive=False, durable=True)
 queue_name = result.method.queue
+text = '{ "time":"14:56:00", "type": "Camera", "severity": 1 }'
+channel.basic_publish(exchange='topics', routing_key="Issue.Notice", body=text)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_event)
 channel.queue_bind(exchange='topics', queue=queue_name, routing_key=key_failure)
-text = '{ "power":"shutdown", "severity":5, "component": "DBM" }'
-channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
-text = '{ "power":"shutdown", "severity":5, "component": "FH" }'
-channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
-text = '{ "power":"shutdown", "severity":5, "component": "EVM" }'
-channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
 print("Waiting for Messages")
 count = 0
 queue_empty = False
 
 def callback(ch, method, properties, body):
-    print(" Received %r:%r" % (method.routing_key, body))
+    print("Received %r:%r" % (method.routing_key, body))
     print("Count is : ", count)
-    time.sleep(0.3)
-    text = '{ "power":"shutdown", "severity":5, "component": "SYP" }'
-    if count == 2:
-        print("Publishing Message")
-        channel.basic_publish(exchange='topics', routing_key=key_publish, body=text)
-        queue_empty = True
 
 
 

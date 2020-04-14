@@ -106,8 +106,8 @@ impl SessionRabbitmq {
     }
 
     pub fn publish(&mut self, topic: &str, message: &str) {
-        self._channel
-            .basic_publish(
+        debug!("Publishing");
+        self._channel.basic_publish(
                 types::EXCHANGE_NAME,
                 topic,
                 false,
@@ -118,7 +118,8 @@ impl SessionRabbitmq {
                 },
                 message.to_string().into_bytes(),
             )
-            .unwrap();
+            .ok().expect("Failed publishing");
+        debug!("Published");
     }
 
     pub fn consume(&mut self) {

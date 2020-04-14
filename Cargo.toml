@@ -17,8 +17,9 @@ serde_json = "*"
 serde_derive = "*"
 chrono = "0.4.11"
 system_shutdown = "3.0.0"
+glob = "0.3.0"
 
 [dev-dependencies]
 assert_cmd = "1.0.1"
 predicates = "1.0.4"
-glob = "0.3.0"
+
