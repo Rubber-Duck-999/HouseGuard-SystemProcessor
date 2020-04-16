@@ -146,8 +146,10 @@ impl Control {
             self._userPanel = false;
         } else if found == 0 && self._userPanel != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._userPanel == false {
+            warn!("The component is now alive {}", component);
+            self._userPanel = true;
+        } else {
             self._userPanel = true;
         }
     }
@@ -166,8 +168,10 @@ impl Control {
             self._cameraMonitor = false;
         } else if found == 0 && self._cameraMonitor != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._cameraMonitor == false {
+            warn!("The component is now alive {}", component);
+            self._cameraMonitor = true;
+        } else {
             self._cameraMonitor = true;
         }      
     }
@@ -187,10 +191,10 @@ impl Control {
             {
                 self._faultHandler = false;
                 error!("Shutdown system");
-                /*match system_shutdown::reboot() {
+                match system_shutdown::reboot() {
                     Ok(_) => println!("Rebooting ..."),
                     Err(error) => eprintln!("Failed to reboot: {}", error),
-                }*/
+                }
             }
         }
     }
@@ -209,8 +213,10 @@ impl Control {
             self._networkAccessController = false;
         } else if found == 0 && self._networkAccessController != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._networkAccessController == false {
+            warn!("The component is now alive {}", component);
+            self._networkAccessController = true;
+        } else {
             self._networkAccessController = true;
         }
     }
@@ -229,8 +235,10 @@ impl Control {
             self._environmentManager = false;
         } else if found == 0 && self._environmentManager != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._environmentManager == false {
+            warn!("The component is now alive {}", component);
+            self._environmentManager = true;
+        } else {
             debug!("The component is alive {}", component);
             self._environmentManager = true;
         }      
@@ -255,8 +263,10 @@ impl Control {
             }
         } else if found == 0 && self._databaseManager != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._databaseManager == false {
+            warn!("The component is now alive {}", component);
+            self._databaseManager = true;
+        } else {
             debug!("The component is alive {}", component);
             self._databaseManager = true;
         }      
@@ -276,8 +286,10 @@ impl Control {
             self._sql = false;
         } else if found == 0 && self._sql != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._sql == false {
+            warn!("The component is now alive {}", component);
+            self._sql = true;
+        } else {
             debug!("The component is alive {}", component);
             self._sql = true;
         }
@@ -297,8 +309,10 @@ impl Control {
             self._rabbitmq = false;
         } else if found == 0 && self._rabbitmq != true {
             warn!("The component is still dead {}", component);
-        }
-        else {
+        } else if found >= 1 && self._rabbitmq == false {
+            warn!("The component is now alive {}", component);
+            self._rabbitmq = true;
+        } else {
             debug!("The component is alive {}", component);
             self._rabbitmq = true;
         }
