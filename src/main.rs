@@ -371,6 +371,5 @@ fn main() {
     let mut control = Control::new();
 
     control.control_loop();
-
     process::exit(0);
 }

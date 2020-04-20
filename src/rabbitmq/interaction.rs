@@ -1,9 +1,12 @@
 extern crate amqp;
 
+use std::process;
+
 use amqp::{Basic, Channel, Options, Session, Table};
 
 extern crate log;
 extern crate simple_logger;
+extern crate serde_yaml;
 
 use crate::rabbitmq::types;
 
@@ -23,15 +26,37 @@ pub struct SessionRabbitmq {
     pub _init: bool,
 }
 
+fn get_passcode_file() -> Result<String, Box<std::error::Error>> {
+    let f = std::fs::File::open("something.yaml")?;
+    let d: String = serde_yaml::from_reader(f)?;
+    println!("Read YAML string");
+    Ok(d)
+}
 fn get_session() -> Session {
-    let session = match Session::new(Options {
-        password: "password".to_string(),
-        ..Default::default()
-    }) {
-        Ok(session) => session,
-        Err(error) => panic!("Failed opening an amqp session: {:?}", error),
-    };
-    return session;
+    let pass: Result<String, Box<std::error::Error>> = get_passcode_file();
+    match pass {
+        Ok(code) => {
+            let session = match Session::new(Options {
+                password: code,
+                ..Default::default()
+            }) {
+                Ok(session) => session,
+                Err(error) => panic!("Failed opening an amqp session: {:?}", error),
+            };
+            return session;
+        }
+        Err(err) => {
+            let session = match Session::new(Options {
+                password: "N/A".to_string(),
+                ..Default::default()
+            }) {
+                Ok(session) => session,
+                Err(error) => panic!("Failed opening an amqp session: {:?}", error),
+            };
+            return session;
+        }
+    }
+
 }
 
 fn get_channel(mut session: Session) -> Channel {

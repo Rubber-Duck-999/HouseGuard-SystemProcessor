@@ -13,3 +13,5 @@
 /.tox
 
 *Cargo.lock
+
+SYP.yml
