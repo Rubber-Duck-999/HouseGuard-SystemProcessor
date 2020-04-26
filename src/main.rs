@@ -80,6 +80,15 @@ impl Control {
 
     fn get_status_update(&mut self) {
         let disk:system::processes::disk_hw = self._process.get_disk_usage();
+        if disk._percentage_usage > 30.0 {
+            let event = rabbitmq::types::EventSyp {
+                message: "CPU High Usage".to_string(),
+                time: self.get_time(),
+                component: system::constants::COMPONENT_NAME.to_string(),
+            };
+            self.send_event(message);
+        }
+        if disk.
         let count = self.find_jpg().unwrap_or(0);
         warn!("Whilst looking for images, we found {:?} images", count);
         self.get_cwd();
@@ -195,6 +204,12 @@ impl Control {
                     Ok(_) => println!("Rebooting ..."),
                     Err(error) => eprintln!("Failed to reboot: {}", error),
                 }
+                let event = rabbitmq::types::EventSyp {
+                    message: "FH down - rebooting".to_string(),
+                    time: self.get_time(),
+                    component: system::constants::COMPONENT_NAME.to_string(),
+                };
+                self.send_event(message);
             }
         }
     }
