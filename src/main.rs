@@ -86,9 +86,8 @@ impl Control {
                 time: self.get_time(),
                 component: system::constants::COMPONENT_NAME.to_string(),
             };
-            self.send_event(message);
+            self.send_event(&event);
         }
-        if disk.
         let count = self.find_jpg().unwrap_or(0);
         warn!("Whilst looking for images, we found {:?} images", count);
         self.get_cwd();
@@ -209,7 +208,7 @@ impl Control {
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
                 };
-                self.send_event(message);
+                self.send_event(&event);
             }
         }
     }

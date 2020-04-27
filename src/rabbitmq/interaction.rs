@@ -27,7 +27,7 @@ pub struct SessionRabbitmq {
 }
 
 fn get_passcode_file() -> Result<String, Box<std::error::Error>> {
-    let f = std::fs::File::open("something.yaml")?;
+    let f = std::fs::File::open("SYP.yml")?;
     let d: String = serde_yaml::from_reader(f)?;
     println!("Read YAML string");
     Ok(d)
