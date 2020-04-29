@@ -80,7 +80,8 @@ impl Control {
 
     fn get_status_update(&mut self) {
         let disk:system::processes::disk_hw = self._process.get_disk_usage();
-        if disk._percentage_usage > 30.0 {
+        warn!("Current disk usage {}", disk._percentage_usage);
+        if disk._percentage_usage > 99.0 {
             let event = rabbitmq::types::EventSyp {
                 message: "CPU High Usage".to_string(),
                 time: self.get_time(),
@@ -106,8 +107,8 @@ impl Control {
     }
 
     fn get_time(&mut self) -> String {
-        let dt = Utc.ymd(2020, 01, 01).and_hms(12, 0, 9);
-        return dt.format("%Y-%m-%d %H:%M:%S").to_string();
+        let dt = Utc::now();
+        return dt.format("%Y/%m/%d %H:%M:%S").to_string();
     }
 
     fn publish_failure_component(&mut self, component: &str) {
