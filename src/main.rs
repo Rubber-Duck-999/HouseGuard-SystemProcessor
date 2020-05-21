@@ -93,7 +93,7 @@ impl Control {
         if disk._percentage_usage > self._highest_disk_usage {
             warn!("Setting new disk usage");
             self._highest_disk_usage = disk._percentage_usage;
-            if updated {
+            if updated && self._highest_disk_usage > 95.0 {
                 let event = rabbitmq::types::EventSyp {
                     message: "CPU High Usage".to_string(),
                     time: self.get_time(),
