@@ -80,30 +80,38 @@ impl Control {
 
     fn get_status_update(&mut self) {
         let disk:system::processes::disk_hw = self._process.get_disk_usage();
-        self._temperature = disk._temperature;
-        self._memory_left = disk._memory_left;
+        let mut updated = false;
+        if self._temperature != disk._temperature {
+            self._temperature = disk._temperature;
+            updated = true;
+        }
+        if self._memory_left != disk._memory_left {
+            self._memory_left = disk._memory_left;
+            updated = true;
+        }
         debug!("Current disk usage {}", disk._percentage_usage);
         if disk._percentage_usage > self._highest_disk_usage {
             warn!("Setting new disk usage");
             self._highest_disk_usage = disk._percentage_usage;
+            if updated {
+                let event = rabbitmq::types::EventSyp {
+                    message: "CPU High Usage".to_string(),
+                    time: self.get_time(),
+                    component: system::constants::COMPONENT_NAME.to_string(),
+                };
+                self.send_event(&event);
+            }
         }
-        if disk._percentage_usage > 90.0 {
-            let event = rabbitmq::types::EventSyp {
-                message: "CPU High Usage".to_string(),
-                time: self.get_time(),
-                component: system::constants::COMPONENT_NAME.to_string(),
+        if updated {
+            let status = rabbitmq::types::StatusSYP {
+                temperature: self._temperature,
+                memory_left: self._memory_left,
+                highest_usage: self._highest_disk_usage,
             };
-            self.send_event(&event);
+            let serialized = serde_json::to_string(&status).unwrap();
+            self._channel.publish(rabbitmq::types::STATUS_SYP, &serialized);
+            self._event_counter += 1;
         }
-        let status = rabbitmq::types::StatusSYP {
-            temperature: self._temperature,
-            memory_left: self._memory_left,
-            highest_usage: self._highest_disk_usage,
-        };
-        let serialized = serde_json::to_string(&status).unwrap();
-        self._channel.publish(rabbitmq::types::STATUS_SYP, &serialized);
-        self._event_counter += 1;
-
     }
 
     fn get_time(&mut self) -> String {
@@ -194,22 +202,25 @@ impl Control {
             found = self._process.ps_find(&component);
         }
         if found == 0 {
-            error!("Fault handler is not alive, we should restart the system");
             debug!("Rerunning find to ensure its definitely not a failure");
             if(self._process.ps_find(&component) == 0)
             {
-                self._faultHandler = false;
-                error!("Shutdown system");
-                match system_shutdown::reboot() {
-                    Ok(_) => println!("Rebooting ..."),
-                    Err(error) => eprintln!("Failed to reboot: {}", error),
+                if(self._faultHandler == true) {
+                    self._faultHandler = false;
+                    error!("Fault handler is not alive, we should restart the system");
+                    match system_shutdown::reboot() {
+                        Ok(_) => println!("Rebooting ..."),
+                        Err(error) => eprintln!("Failed to reboot: {}", error),
+                    }
+                    let event = rabbitmq::types::EventSyp {
+                        message: "FH down - rebooting".to_string(),
+                        time: self.get_time(),
+                        component: system::constants::COMPONENT_NAME.to_string(),
+                    };
+                    self.send_event(&event);
+                } else if(self._faultHandler == false) {
+                    debug!("Fault Handler is still dead");
                 }
-                let event = rabbitmq::types::EventSyp {
-                    message: "FH down - rebooting".to_string(),
-                    time: self.get_time(),
-                    component: system::constants::COMPONENT_NAME.to_string(),
-                };
-                self.send_event(&event);
             }
         }
     }
@@ -334,7 +345,7 @@ impl Control {
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
-        warn!("Publishing a event message about: {}", message.message);
+        debug!("Publishing a event message about: {}", message.message);
         let serialized = serde_json::to_string(&message).unwrap();
         self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
         self._event_counter += 1;
@@ -355,12 +366,12 @@ impl Control {
     pub fn control_loop(&mut self) {
         trace!("Declaring consumer...");
         self._channel.consume();
-        thread::sleep(time::Duration::from_secs(10));
+        thread::sleep(time::Duration::from_secs(60));
         while self._shutdown != true {
-            thread::sleep(time::Duration::from_secs(5));
+            thread::sleep(time::Duration::from_secs(60));
             self.check_rabbitmq();
             self.check_fault_handler();
-            thread::sleep(time::Duration::from_secs(5));
+            thread::sleep(time::Duration::from_secs(60));
             self.check_sql();
             self.check_database_manager();
             self.check_environment_manager();
