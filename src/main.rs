@@ -50,6 +50,9 @@ struct Control {
     _networkAccessController: bool,
     _sql: bool,
     _rabbitmq: bool,
+    _highest_disk_usage: f32,
+    _temperature: f32,
+    _memory_left: u64,
 }
 
 impl Control {
@@ -69,19 +72,22 @@ impl Control {
             _networkAccessController: true,
             _sql: true,
             _rabbitmq: true,
+            _highest_disk_usage: 0.0,
+            _temperature: 0.0,
+            _memory_left: 0,
         }
-    }
-
-    fn get_cwd(&mut self) -> std::io::Result<()> {
-        let path = env::current_dir()?;
-        debug!("The current directory is {}", path.display());
-        Ok(())
     }
 
     fn get_status_update(&mut self) {
         let disk:system::processes::disk_hw = self._process.get_disk_usage();
-        warn!("Current disk usage {}", disk._percentage_usage);
-        if disk._percentage_usage > 99.0 {
+        self._temperature = disk._temperature;
+        self._memory_left = disk._memory_left;
+        debug!("Current disk usage {}", disk._percentage_usage);
+        if disk._percentage_usage > self._highest_disk_usage {
+            warn!("Setting new disk usage");
+            self._highest_disk_usage = disk._percentage_usage;
+        }
+        if disk._percentage_usage > 90.0 {
             let event = rabbitmq::types::EventSyp {
                 message: "CPU High Usage".to_string(),
                 time: self.get_time(),
@@ -89,21 +95,15 @@ impl Control {
             };
             self.send_event(&event);
         }
-        let count = self.find_jpg().unwrap_or(0);
-        warn!("Whilst looking for images, we found {:?} images", count);
-        self.get_cwd();
-    }
-    
-    fn find_jpg(&mut self) -> Result<u16, Box<dyn Error>> {
-        trace!("Looking for jpg files");
-        let mut count: u16 = 0;
-        for entry in glob("**/*.jpg")? {
-            debug!("{}", entry?.display());
-            count += 1;
-        }
-        debug!("Files found {}", count);
-    
-        Ok(count)
+        let status = rabbitmq::types::StatusSYP {
+            temperature: self._temperature,
+            memory_left: self._memory_left,
+            highest_usage: self._highest_disk_usage,
+        };
+        let serialized = serde_json::to_string(&status).unwrap();
+        self._channel.publish(rabbitmq::types::STATUS_SYP, &serialized);
+        self._event_counter += 1;
+
     }
 
     fn get_time(&mut self) -> String {
@@ -146,7 +146,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._userPanel == true {
@@ -154,7 +154,7 @@ impl Control {
             self.publish_failure_component(system::constants::USER_PANEL);
             self._userPanel = false;
         } else if found == 0 && self._userPanel != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._userPanel == false {
             warn!("The component is now alive {}", component);
             self._userPanel = true;
@@ -168,7 +168,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._cameraMonitor == true {
@@ -176,7 +176,7 @@ impl Control {
             self.publish_failure_component(system::constants::CAMERA_MONITOR);
             self._cameraMonitor = false;
         } else if found == 0 && self._cameraMonitor != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._cameraMonitor == false {
             warn!("The component is now alive {}", component);
             self._cameraMonitor = true;
@@ -190,7 +190,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 {
@@ -219,7 +219,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._networkAccessController == true {
@@ -227,7 +227,7 @@ impl Control {
             self.publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
             self._networkAccessController = false;
         } else if found == 0 && self._networkAccessController != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._networkAccessController == false {
             warn!("The component is now alive {}", component);
             self._networkAccessController = true;
@@ -241,7 +241,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._environmentManager == true {
@@ -249,7 +249,7 @@ impl Control {
             self.publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
             self._environmentManager = false;
         } else if found == 0 && self._environmentManager != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._environmentManager == false {
             warn!("The component is now alive {}", component);
             self._environmentManager = true;
@@ -264,7 +264,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._databaseManager == true {
@@ -277,7 +277,7 @@ impl Control {
                 }
             }
         } else if found == 0 && self._databaseManager != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._databaseManager == false {
             warn!("The component is now alive {}", component);
             self._databaseManager = true;
@@ -292,7 +292,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._sql == true {
@@ -300,7 +300,7 @@ impl Control {
             self.publish_failure_component(system::constants::SQL);
             self._sql = false;
         } else if found == 0 && self._sql != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._sql == false {
             warn!("The component is now alive {}", component);
             self._sql = true;
@@ -315,7 +315,7 @@ impl Control {
         debug!("Looking for {}", component);
         let mut found = self._process.ps_find(&component); 
         while found == system::constants::ERROR_FIND {
-            error!("Find failed to run, retrying");
+            debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
         if found == 0 && self._rabbitmq == true {
@@ -323,7 +323,7 @@ impl Control {
             self.publish_failure_component(system::constants::SQL);
             self._rabbitmq = false;
         } else if found == 0 && self._rabbitmq != true {
-            warn!("The component is still dead {}", component);
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._rabbitmq == false {
             warn!("The component is now alive {}", component);
             self._rabbitmq = true;
@@ -355,7 +355,7 @@ impl Control {
     pub fn control_loop(&mut self) {
         trace!("Declaring consumer...");
         self._channel.consume();
-        thread::sleep(time::Duration::from_secs(5));
+        thread::sleep(time::Duration::from_secs(10));
         while self._shutdown != true {
             thread::sleep(time::Duration::from_secs(5));
             self.check_rabbitmq();

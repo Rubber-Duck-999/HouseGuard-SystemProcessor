@@ -1,5 +1,7 @@
 extern crate psutil;
 
+extern crate systemstat;
+
 extern crate log;
 extern crate simple_logger;
 
@@ -11,13 +13,16 @@ use psutil::process::Process;
 
 use psutil::*;
 
+use systemstat::{System, Platform, saturating_sub_bytes};
+
 use crate::system::constants;
 
 use std::process::Command;
 
 pub struct disk_hw {
     pub _percentage_usage: f32,
-    pub _uptime: u64,
+    pub _memory_left: u64,
+    pub _temperature: f32,
 }
 
 pub struct Processes {
@@ -97,13 +102,24 @@ impl Processes {
         debug!("Disk usage: {:?}", disk_usage);
         let percentage = disk_usage.percent();
         debug!("Disk usage %: {:?}", percentage);
-        let uptime = host::uptime().unwrap().as_secs();
-        debug!("System uptime: {:?}", uptime);
-        let temperatures = sensors::temperatures();
-        debug!("System temperature: {:?}", temperatures);
+        //
+        let sys = System::new();
+        //
+        let mut temperatures = 0.0;
+        match sys.cpu_temp() {
+            Ok(cpu_temp) => temperatures = cpu_temp,
+            Err(x) => error!("CPU temp: {}", x)
+        }   
+        //
+        let mut memory_left = 0;
+        match sys.memory() {
+            Ok(mem) => memory_left = mem.free.as_u64(),
+            Err(x) => println!("\nMemory: error: {}", x)
+        }
         let temp = disk_hw {
             _percentage_usage: percentage,
-            _uptime: uptime,
+            _memory_left: memory_left,
+            _temperature: temperatures,
         };
         return temp;
     }
