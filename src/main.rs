@@ -5,8 +5,6 @@ use clap::App;
 
 use std::process;
 
-use std::ffi::{OsString, OsStr};
-
 extern crate chrono;
 use chrono::prelude::*;
 
@@ -19,8 +17,6 @@ extern crate simple_logger;
 use log::Level;
 
 use std::fs;
-use std::io::BufReader;
-use std::io::prelude::*;
 
 #[macro_use]
 extern crate serde_derive;
@@ -28,26 +24,19 @@ extern crate serde;
 extern crate serde_json;
 extern crate system_shutdown;
 
-use system_shutdown::shutdown;
-
 extern crate glob;
-
-use glob::glob;
-use std::error::Error;
-
-use std::env;
 
 struct Control {
     _process: system::processes::Processes,
     _channel: rabbitmq::interaction::SessionRabbitmq,
     _shutdown: bool,
     _event_counter: u32,
-    _userPanel: bool,
-    _faultHandler: bool,
-    _databaseManager: bool,
-    _cameraMonitor: bool,
-    _environmentManager: bool,
-    _networkAccessController: bool,
+    _user_panel: bool,
+    _fault_handler: bool,
+    _database_manager: bool,
+    _camera_monitor: bool,
+    _environment_manager: bool,
+    _network_access_controller: bool,
     _sql: bool,
     _rabbitmq: bool,
     _highest_disk_usage: f32,
@@ -64,12 +53,12 @@ impl Control {
             },
             _shutdown: false,
             _event_counter: 0,
-            _userPanel: true,
-            _faultHandler: true,
-            _databaseManager: true,
-            _cameraMonitor: true,
-            _environmentManager: true,
-            _networkAccessController: true,
+            _user_panel: true,
+            _fault_handler: true,
+            _database_manager: true,
+            _camera_monitor: true,
+            _environment_manager: true,
+            _network_access_controller: true,
             _sql: true,
             _rabbitmq: true,
             _highest_disk_usage: 0.0,
@@ -79,7 +68,7 @@ impl Control {
     }
 
     fn get_status_update(&mut self) {
-        let disk:system::processes::disk_hw = self._process.get_disk_usage();
+        let disk:system::processes::DiskHw = self._process.get_disk_usage();
         let mut updated = false;
         if self._temperature != disk._temperature {
             self._temperature = disk._temperature;
@@ -157,17 +146,17 @@ impl Control {
             debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
-        if found == 0 && self._userPanel == true {
+        if found == 0 && self._user_panel == true {
             error!("The component was not alive please debug {}", component);
             self.publish_failure_component(system::constants::USER_PANEL);
-            self._userPanel = false;
-        } else if found == 0 && self._userPanel != true {
+            self._user_panel = false;
+        } else if found == 0 && self._user_panel != true {
             debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._userPanel == false {
+        } else if found >= 1 && self._user_panel == false {
             warn!("The component is now alive {}", component);
-            self._userPanel = true;
+            self._user_panel = true;
         } else {
-            self._userPanel = true;
+            self._user_panel = true;
         }
     }
 
@@ -179,17 +168,17 @@ impl Control {
             debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
-        if found == 0 && self._cameraMonitor == true {
+        if found == 0 && self._camera_monitor == true {
             error!("The component was not alive please debug {}", component);
             self.publish_failure_component(system::constants::CAMERA_MONITOR);
-            self._cameraMonitor = false;
-        } else if found == 0 && self._cameraMonitor != true {
+            self._camera_monitor = false;
+        } else if found == 0 && self._camera_monitor != true {
             debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._cameraMonitor == false {
+        } else if found >= 1 && self._camera_monitor == false {
             warn!("The component is now alive {}", component);
-            self._cameraMonitor = true;
+            self._camera_monitor = true;
         } else {
-            self._cameraMonitor = true;
+            self._camera_monitor = true;
         }      
     }
 
@@ -203,22 +192,22 @@ impl Control {
         }
         if found == 0 {
             debug!("Rerunning find to ensure its definitely not a failure");
-            if(self._process.ps_find(&component) == 0)
+            if self._process.ps_find(&component) == 0
             {
-                if(self._faultHandler == true) {
-                    self._faultHandler = false;
+                if self._fault_handler == true {
+                    self._fault_handler = false;
                     error!("Fault handler is not alive, we should restart the system");
                     match system_shutdown::reboot() {
                         Ok(_) => println!("Rebooting ..."),
                         Err(error) => eprintln!("Failed to reboot: {}", error),
                     }
                     let event = rabbitmq::types::EventSyp {
-                        message: "FH down - rebooting".to_string(),
+                        message: system::constants::FAULT_HANDLER.to_string(),
                         time: self.get_time(),
                         component: system::constants::COMPONENT_NAME.to_string(),
                     };
                     self.send_event(&event);
-                } else if(self._faultHandler == false) {
+                } else if self._fault_handler == false {
                     debug!("Fault Handler is still dead");
                 }
             }
@@ -233,17 +222,17 @@ impl Control {
             debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
-        if found == 0 && self._networkAccessController == true {
+        if found == 0 && self._network_access_controller == true {
             error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::NETWORK_ACCESS_CONTROLLER);
-            self._networkAccessController = false;
-        } else if found == 0 && self._networkAccessController != true {
+            self._network_access_controller = false;
+        } else if found == 0 && self._network_access_controller != true {
             debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._networkAccessController == false {
+        } else if found >= 1 && self._network_access_controller == false {
             warn!("The component is now alive {}", component);
-            self._networkAccessController = true;
+            self._network_access_controller = true;
         } else {
-            self._networkAccessController = true;
+            self._network_access_controller = true;
         }
     }
 
@@ -255,18 +244,18 @@ impl Control {
             debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
-        if found == 0 && self._environmentManager == true {
+        if found == 0 && self._environment_manager == true {
             error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
-            self._environmentManager = false;
-        } else if found == 0 && self._environmentManager != true {
+            self._environment_manager = false;
+        } else if found == 0 && self._environment_manager != true {
             debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._environmentManager == false {
+        } else if found >= 1 && self._environment_manager == false {
             warn!("The component is now alive {}", component);
-            self._environmentManager = true;
+            self._environment_manager = true;
         } else {
             debug!("The component is alive {}", component);
-            self._environmentManager = true;
+            self._environment_manager = true;
         }      
     }
 
@@ -278,23 +267,23 @@ impl Control {
             debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
         }
-        if found == 0 && self._databaseManager == true {
+        if found == 0 && self._database_manager == true {
             error!("The component was not alive {}", component);
             self.publish_failure_component(system::constants::DATABASE_MANAGER);
-            self._databaseManager = false;
+            self._database_manager = false;
             if self.check_file("/home/simon/Documents/Deploy/logs/DBM.txt") {
                 if self.compare("/home/simon/Documents/Deploy/logs/DBM.txt", "Exception") {
                     error!("Log file exists and a exception occured");
                 }
             }
-        } else if found == 0 && self._databaseManager != true {
+        } else if found == 0 && self._database_manager != true {
             debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._databaseManager == false {
+        } else if found >= 1 && self._database_manager == false {
             warn!("The component is now alive {}", component);
-            self._databaseManager = true;
+            self._database_manager = true;
         } else {
             debug!("The component is alive {}", component);
-            self._databaseManager = true;
+            self._database_manager = true;
         }      
     }
 

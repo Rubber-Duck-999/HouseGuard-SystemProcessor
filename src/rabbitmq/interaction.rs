@@ -1,7 +1,5 @@
 extern crate amqp;
 
-use std::process;
-
 use amqp::{Basic, Channel, Options, Session, Table};
 
 extern crate log;
@@ -16,8 +14,6 @@ use std::str;
 
 use std::default::Default;
 
-use crate::system::constants;
-
 pub struct SessionRabbitmq {
     pub _durable: bool,
     pub _session: Session,
@@ -26,14 +22,14 @@ pub struct SessionRabbitmq {
     pub _init: bool,
 }
 
-fn get_passcode_file() -> Result<String, Box<std::error::Error>> {
+fn get_passcode_file() -> Result<String, Box<dyn std::error::Error>> {
     let f = std::fs::File::open("SYP.yml")?;
     let d: String = serde_yaml::from_reader(f)?;
     println!("Read YAML string");
     Ok(d)
 }
 fn get_session() -> Session {
-    let pass: Result<String, Box<std::error::Error>> = get_passcode_file();
+    let pass: Result<String, Box<dyn std::error::Error>> = get_passcode_file();
     match pass {
         Ok(code) => {
             let session = match Session::new(Options {
@@ -45,7 +41,7 @@ fn get_session() -> Session {
             };
             return session;
         }
-        Err(err) => {
+        Err(_err) => {
             let session = match Session::new(Options {
                 password: "N/A".to_string(),
                 ..Default::default()
@@ -103,7 +99,7 @@ impl SessionRabbitmq {
             .unwrap();
     }
 
-    pub fn create_session_and_channel(&mut self) {
+/*     pub fn create_session_and_channel(&mut self) {
         if self._init {
             debug!(
                 "Initialised Rabbitmq Connection = {}",
@@ -119,8 +115,8 @@ impl SessionRabbitmq {
             }
             self._init = true;
         }
-    }
-
+    } */
+/* 
     fn terminate_session_and_channel(&mut self) {
         const CLOSE_REPLY_CODE: u16 = 200;
         const CLOSE_REPLY_TEXT: &str = "closing producer";
@@ -128,7 +124,7 @@ impl SessionRabbitmq {
             .close(CLOSE_REPLY_CODE, CLOSE_REPLY_TEXT)
             .unwrap();
         self._session.close(CLOSE_REPLY_CODE, CLOSE_REPLY_TEXT);
-    }
+    } */
 
     pub fn publish(&mut self, topic: &str, message: &str) {
         debug!("Publishing");

@@ -9,17 +9,14 @@ use std::thread;
 use std::time::Duration;
 
 use psutil::process::processes;
-use psutil::process::Process;
 
 use psutil::*;
 
-use systemstat::{System, Platform, saturating_sub_bytes};
+use systemstat::{System, Platform};
 
 use crate::system::constants;
 
-use std::process::Command;
-
-pub struct disk_hw {
+pub struct DiskHw {
     pub _percentage_usage: f32,
     pub _memory_left: u64,
     pub _temperature: f32,
@@ -34,43 +31,14 @@ impl Processes {
         Processes { _status: false }
     }
 
-    pub fn ps_find_pid(&mut self, pid: u32) -> bool {
-        let mut found: bool = false;
-        let mut processes_vector = processes();
-        match processes_vector {
-            Ok(output) => trace!("No issue in processes: {:?}", output),
-            Err(e) => return found,
-        };
-        let mut processes = processes().unwrap();
-        let block_time = Duration::from_millis(1000);
-        thread::sleep(block_time);
-
-        for p in processes {
-            if p.is_err() {
-                error!("Crash on p");
-                return found;
-            }
-            let p = p.unwrap();
-            trace!("Creating check of pid");
-            if p.cmdline().is_err() {
-                error!("Cmdline failed");
-                return found;
-            }
-            if p.pid() == pid {
-                found = true;
-            }
-        }
-        return found;
-    }
-
     pub fn ps_find(&mut self, component: &str) -> u16 {
         let mut amount_found: u16 = 0;
-        let mut processes_vector = processes();
+        let processes_vector = processes();
         match processes_vector {
             Ok(output) => trace!("No issue in processes: {:?}", output),
-            Err(e) => return amount_found,
+            Err(_e) => return amount_found,
         };
-        let mut processes = processes().unwrap();
+        let processes = processes().unwrap();
         let block_time = Duration::from_millis(1000);
         thread::sleep(block_time);
 
@@ -97,7 +65,7 @@ impl Processes {
         return amount_found;
     }
 
-    pub fn get_disk_usage(&mut self) -> disk_hw{
+    pub fn get_disk_usage(&mut self) -> DiskHw{
         let disk_usage = disk::disk_usage("/").unwrap();
         debug!("Disk usage: {:?}", disk_usage);
         let percentage = disk_usage.percent();
@@ -116,7 +84,7 @@ impl Processes {
             Ok(mem) => memory_left = mem.free.as_u64(),
             Err(x) => println!("\nMemory: error: {}", x)
         }
-        let temp = disk_hw {
+        let temp = DiskHw {
             _percentage_usage: percentage,
             _memory_left: memory_left,
             _temperature: temperatures,
