@@ -87,6 +87,7 @@ impl Control {
                     message: "CPU High Usage".to_string(),
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
+                    event_type_id: system::constants::SYP2.to_string(),
                 };
                 self.send_event(&event);
             }
@@ -205,6 +206,7 @@ impl Control {
                         message: system::constants::FAULT_HANDLER.to_string(),
                         time: self.get_time(),
                         component: system::constants::COMPONENT_NAME.to_string(),
+                        event_type_id: system::constants::SYP1.to_string(),
                     };
                     self.send_event(&event);
                 } else if self._fault_handler == false {

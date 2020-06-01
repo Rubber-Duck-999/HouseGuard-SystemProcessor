@@ -18,6 +18,7 @@ pub struct EventSyp {
     pub message: String,
     pub time: String,
     pub component: String,
+    pub event_type_id: String,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
