@@ -6,9 +6,9 @@ git pull
 success=$?
 echo $success
 
-#cargo clean
+cargo clean
 
-#cargo build
+cargo build
 
 if [ -f target/debug/exeSystemProcessor ];
 then
