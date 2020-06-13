@@ -4,17 +4,15 @@ cd $HOME/Documents/HouseGuard-SystemProcessor
 
 git pull
 
-cargo clean
-
 cargo build
 
 if [ -f target/debug/exeSystemProcessor ];
 then
     echo "SYS File found"
-    if [ -f $HOME/Documents/Temp/exeSystemProcessor ];
+    if [ -f $HOME/Documents/Deploy/exeSystemProcessor ];
     then
         echo "SYS old removed"
-        rm -f $HOME/Documents/Temp/exeSystemProcessor
+        rm -f $HOME/Documents/Deploy/exeSystemProcessor
     fi
-    cp target/debug/exeSystemProcessor $HOME/Documents/Temp/exeSystemProcessor
+    cp target/debug/exeSystemProcessor $HOME/Documents/Deploy/exeSystemProcessor
 fi
