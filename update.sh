@@ -3,8 +3,6 @@
 cd $HOME/Documents/HouseGuard-SystemProcessor
 
 git pull
-success=$?
-echo $success
 
 cargo clean
 
