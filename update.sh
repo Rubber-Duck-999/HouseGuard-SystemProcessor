@@ -4,8 +4,6 @@ cd $HOME/Documents/HouseGuard-SystemProcessor
 
 git pull
 
-cargo clean
-
 cargo build
 
 if [ -f target/debug/exeSystemProcessor ];
