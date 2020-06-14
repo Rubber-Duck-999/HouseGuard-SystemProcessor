@@ -35,6 +35,8 @@ struct Control {
     _fault_handler: bool,
     _database_manager: bool,
     _camera_monitor: bool,
+    _start_camera_monitor: bool,
+    _kill_camera_monitor: bool,
     _environment_manager: bool,
     _network_access_controller: bool,
     _sql: bool,
@@ -57,6 +59,8 @@ impl Control {
             _fault_handler: true,
             _database_manager: true,
             _camera_monitor: true,
+            _start_camera_monitor: false,
+            _kill_camera_monitor: false,
             _environment_manager: true,
             _network_access_controller: true,
             _sql: true,
@@ -174,10 +178,20 @@ impl Control {
             self.publish_failure_component(system::constants::CAMERA_MONITOR);
             self._camera_monitor = false;
         } else if found == 0 && self._camera_monitor != true {
-            debug!("The component is still dead {}", component);
+            if self._start_camera_monitor == true {
+                self._process.start_cm();
+            } else {
+                debug!("The component is still dead {}", component);
+            }
         } else if found >= 1 && self._camera_monitor == false {
             warn!("The component is now alive {}", component);
             self._camera_monitor = true;
+            if self._kill_camera_monitor == true {
+                if self._process.kill_cm(&component) {
+                    self._camera_monitor = false;
+                    self.publish_failure_component(system::constants::CAMERA_MONITOR);
+                }
+            }
         } else {
             self._camera_monitor = true;
         }      
@@ -292,7 +306,7 @@ impl Control {
     fn check_sql(&mut self) {
         let component = "mysql";
         debug!("Looking for {}", component);
-        let mut found = self._process.ps_find(&component); 
+        let mut found = self._process.ps_find(&component);
         while found == system::constants::ERROR_FIND {
             debug!("Find failed to run, retrying");
             found = self._process.ps_find(&component);
@@ -335,6 +349,25 @@ impl Control {
         }
     }
 
+    fn check_messages(&mut self) {
+        let x:rabbitmq::interaction::MessagePower = self._channel.consume_get();
+        if x._count == 0 || x._component != rabbitmq::types::CAMERA_MONITOR {
+            self._start_camera_monitor = false;
+            self._kill_camera_monitor = false;
+            return;
+        }
+
+        if x._state == rabbitmq::types::POWER_ON {
+            self._start_camera_monitor = true;
+        } else if x._state == rabbitmq::types::POWER_OFF {
+            self._kill_camera_monitor = true;
+        }
+    }
+
+    fn check_ssh(&mut self) {
+        self._process.find_ssh_sessions();
+    }
+
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
         debug!("Publishing a event message about: {}", message.message);
         let serialized = serde_json::to_string(&message).unwrap();
@@ -359,11 +392,11 @@ impl Control {
         self._channel.consume();
         thread::sleep(time::Duration::from_secs(60));
         while self._shutdown != true {
-            thread::sleep(time::Duration::from_secs(60));
+            self.check_messages();
             self.check_rabbitmq();
             self.check_fault_handler();
-            thread::sleep(time::Duration::from_secs(60));
             self.check_sql();
+            self.check_ssh();
             self.check_database_manager();
             self.check_environment_manager();
             self.check_network_access_controller();

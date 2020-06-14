@@ -4,6 +4,9 @@ pub const REQUEST_POWER: &str = "Status.Update";
 pub const EVENT_SYP: &str = "Event.SYP";
 pub const STATUS_SYP: &str = "Status.SYP";
 pub const FAILURE_COMPONENT: &str = "Failure.Component";
+pub const CAMERA_MONITOR: &str = "Camera.Monitor";
+pub const POWER_ON: u16 = 100;
+pub const POWER_OFF: u16 = 50;
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StatusUpdate {
@@ -11,6 +14,12 @@ pub struct StatusUpdate {
     pub memory_total: u16,
     pub memory_used: u16,
     pub images: u16,
+}
+
+#[derive(Serialize, Deserialize, Debug, Default)]
+pub struct RequestPower {
+    pub component: String,
+    pub state: u16,
 }
 
 #[derive(Serialize, Deserialize, Debug)]

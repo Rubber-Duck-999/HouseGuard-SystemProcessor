@@ -14,6 +14,12 @@ use std::str;
 
 use std::default::Default;
 
+pub struct MessagePower {
+    pub _component: String,
+    pub _count: u16,
+    pub _state: u16,
+}
+
 pub struct SessionRabbitmq {
     pub _durable: bool,
     pub _session: Session,
@@ -173,28 +179,32 @@ impl SessionRabbitmq {
         warn!("[{} Consumer ] Created.", "");
     }
 
-    /*
-    pub fn consume_get(&mut self, message: &mut types::RequestPower) -> bool {
-        let mut valid: bool = false;
+    
+    pub fn consume_get(&mut self) -> MessagePower {
+        let mut component = "";
+        let mut count = 0;
+        let mut state = 0;
+        let mut message = types::RequestPower::default();
         for get_result in self._channel.basic_get("", false) {
             if get_result.reply.routing_key.contains(types::REQUEST_POWER) {
                 warn!("Received {}", types::REQUEST_POWER);
 
-                if String::from_utf8_lossy(&get_result.body).contains("power")
-                    && String::from_utf8_lossy(&get_result.body).contains("severity")
-                    && String::from_utf8_lossy(&get_result.body).contains("component")
+                if String::from_utf8_lossy(&get_result.body).contains("component")
                 {
-                    *message =
-                        serde_json::from_str(&String::from_utf8_lossy(&get_result.body)).unwrap();
-                    if message.power != "" {
-                        valid = true;
-                        warn!("Message has been validated");
-                        return valid;
-                    }
+                    message = serde_json::from_str(&String::from_utf8_lossy(&get_result.body)).unwrap();
+                    component = &message.component;
+                    warn!("Received a power request for {}", component);
+                    state = message.state;
+                    count = count + 1;
                 }
             }
             get_result.ack();
         }
-        return valid;
-    }*/
+        let temp = MessagePower {
+            _component: component.to_string(),
+            _state: state,
+            _count: count,
+        };
+        return temp;
+    }
 }
