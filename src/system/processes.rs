@@ -40,15 +40,6 @@ impl Processes {
         warn!("Status of run: {:?}", status);
     }
 
-    pub fn find_ssh_sessions(&mut self) {
-        warn!("Finding SSH sessions");
-        let output = Command::new("sh")
-                    .arg("ss | grep -i ssh")
-                    .output()
-                    .expect("failed to execute process");
-        warn!("Status of run: {:?}", String::from_utf8_lossy(&output.stdout));
-    }
-
     pub fn kill_cm(&mut self, component: &str) -> bool {
         let mut success: bool = false;
         let mut processes_vector = processes();

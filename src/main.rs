@@ -364,10 +364,6 @@ impl Control {
         }
     }
 
-    fn check_ssh(&mut self) {
-        self._process.find_ssh_sessions();
-    }
-
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
         debug!("Publishing a event message about: {}", message.message);
         let serialized = serde_json::to_string(&message).unwrap();
@@ -391,18 +387,19 @@ impl Control {
         trace!("Declaring consumer...");
         self._channel.consume();
         thread::sleep(time::Duration::from_secs(60));
+        self._start_camera_monitor = true;
         while self._shutdown != true {
             self.check_messages();
             self.check_rabbitmq();
             self.check_fault_handler();
             self.check_sql();
-            self.check_ssh();
             self.check_database_manager();
             self.check_environment_manager();
             self.check_network_access_controller();
             self.check_camera_monitor();
             self.check_user_panel();
             self.get_status_update();
+            thread::sleep(time::Duration::from_secs(60));
         }
     }
 }
