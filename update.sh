@@ -16,3 +16,6 @@ then
     fi
     cp target/debug/exeSystemProcessor $HOME/Documents/Deploy/exeSystemProcessor
 fi
+
+cargo clean
+
