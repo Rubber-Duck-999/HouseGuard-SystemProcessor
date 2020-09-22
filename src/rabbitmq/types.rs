@@ -24,7 +24,6 @@ pub struct RequestPower {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct EventSyp {
-    pub message: String,
     pub time: String,
     pub component: String,
     pub event_type_id: String,

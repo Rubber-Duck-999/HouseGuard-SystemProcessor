@@ -86,9 +86,8 @@ impl Control {
         if disk._percentage_usage > self._highest_disk_usage {
             warn!("Setting new disk usage");
             self._highest_disk_usage = disk._percentage_usage;
-            if updated && self._highest_disk_usage > 95.0 {
+            if updated && self._highest_disk_usage > 92.0 {
                 let event = rabbitmq::types::EventSyp {
-                    message: "CPU High Usage".to_string(),
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
                     event_type_id: system::constants::SYP2.to_string(),
@@ -217,7 +216,6 @@ impl Control {
                         Err(error) => eprintln!("Failed to reboot: {}", error),
                     }
                     let event = rabbitmq::types::EventSyp {
-                        message: system::constants::FAULT_HANDLER.to_string(),
                         time: self.get_time(),
                         component: system::constants::COMPONENT_NAME.to_string(),
                         event_type_id: system::constants::SYP1.to_string(),
@@ -365,7 +363,7 @@ impl Control {
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
-        debug!("Publishing a event message about: {}", message.message);
+        debug!("Publishing a event message about: {}", message.event_type_id);
         let serialized = serde_json::to_string(&message).unwrap();
         self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
         self._event_counter += 1;
