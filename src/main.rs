@@ -363,10 +363,12 @@ impl Control {
     }
 
     fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
-        debug!("Publishing a event message about: {}", message.event_type_id);
-        let serialized = serde_json::to_string(&message).unwrap();
-        self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
-        self._event_counter += 1;
+        if self._event_counter > 10 {
+            debug!("Publishing a event message about: {}", message.event_type_id);
+            let serialized = serde_json::to_string(&message).unwrap();
+            self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
+            self._event_counter += 1;
+        }
     }
 
     pub fn get_shutdown(&mut self) -> bool {
