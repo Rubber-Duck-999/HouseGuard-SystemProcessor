@@ -74,11 +74,11 @@ impl Control {
     fn get_status_update(&mut self) {
         let disk:system::processes::DiskHw = self._process.get_disk_usage();
         let mut updated = false;
-        if self._temperature != disk._temperature {
+        if self._temperature > disk._temperature {
             self._temperature = disk._temperature;
             updated = true;
         }
-        if self._memory_left != disk._memory_left {
+        if self._memory_left < disk._memory_left {
             self._memory_left = disk._memory_left;
             updated = true;
         }
@@ -86,7 +86,7 @@ impl Control {
         if disk._percentage_usage > self._highest_disk_usage {
             warn!("Setting new disk usage");
             self._highest_disk_usage = disk._percentage_usage;
-            if updated && self._highest_disk_usage > 92.0 {
+            if updated && self._highest_disk_usage > 98.0 {
                 let event = rabbitmq::types::EventSyp {
                     time: self.get_time(),
                     component: system::constants::COMPONENT_NAME.to_string(),
