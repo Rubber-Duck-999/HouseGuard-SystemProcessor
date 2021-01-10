@@ -30,14 +30,11 @@ struct Control {
     _process: system::processes::Processes,
     _channel: rabbitmq::interaction::SessionRabbitmq,
     _shutdown: bool,
-    _event_counter: u32,
     _user_panel: bool,
     _fault_handler: bool,
-    _database_manager: bool,
     _camera_monitor: bool,
     _start_camera_monitor: bool,
     _kill_camera_monitor: bool,
-    _environment_manager: bool,
     _network_access_controller: bool,
     _sql: bool,
     _rabbitmq: bool,
@@ -54,14 +51,11 @@ impl Control {
                 ..Default::default()
             },
             _shutdown: false,
-            _event_counter: 0,
             _user_panel: true,
             _fault_handler: true,
-            _database_manager: true,
             _camera_monitor: true,
             _start_camera_monitor: false,
             _kill_camera_monitor: false,
-            _environment_manager: true,
             _network_access_controller: true,
             _sql: true,
             _rabbitmq: true,
@@ -86,14 +80,6 @@ impl Control {
         if disk._percentage_usage > self._highest_disk_usage {
             warn!("Setting new disk usage");
             self._highest_disk_usage = disk._percentage_usage;
-            if updated && self._highest_disk_usage > 98.0 {
-                let event = rabbitmq::types::EventSyp {
-                    time: self.get_time(),
-                    component: system::constants::COMPONENT_NAME.to_string(),
-                    event_type_id: system::constants::SYP2.to_string(),
-                };
-                self.send_event(&event);
-            }
         }
         if updated {
             let status = rabbitmq::types::StatusSYP {
@@ -103,7 +89,6 @@ impl Control {
             };
             let serialized = serde_json::to_string(&status).unwrap();
             self._channel.publish(rabbitmq::types::STATUS_SYP, &serialized);
-            self._event_counter += 1;
         }
     }
 
@@ -120,7 +105,6 @@ impl Control {
             };
             let serialized = serde_json::to_string(&failure).unwrap();
             self._channel.publish(rabbitmq::types::FAILURE_COMPONENT, &serialized);
-            self._event_counter += 1;
         } else {
             error!("Rabbitmq has not been running, cannot send message");
         }
@@ -215,12 +199,6 @@ impl Control {
                         Ok(_) => println!("Rebooting ..."),
                         Err(error) => eprintln!("Failed to reboot: {}", error),
                     }
-                    let event = rabbitmq::types::EventSyp {
-                        time: self.get_time(),
-                        component: system::constants::COMPONENT_NAME.to_string(),
-                        event_type_id: system::constants::SYP1.to_string(),
-                    };
-                    self.send_event(&event);
                 } else if self._fault_handler == false {
                     debug!("Fault Handler is still dead");
                 }
@@ -248,57 +226,6 @@ impl Control {
         } else {
             self._network_access_controller = true;
         }
-    }
-
-    fn check_environment_manager(&mut self) {
-        let component = "exeEnvironmentManager";
-        debug!("Looking for {}", component);
-        let mut found = self._process.ps_find(&component); 
-        while found == system::constants::ERROR_FIND {
-            debug!("Find failed to run, retrying");
-            found = self._process.ps_find(&component);
-        }
-        if found == 0 && self._environment_manager == true {
-            error!("The component was not alive {}", component);
-            self.publish_failure_component(system::constants::ENVIRONMENT_MANAGER);
-            self._environment_manager = false;
-        } else if found == 0 && self._environment_manager != true {
-            debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._environment_manager == false {
-            warn!("The component is now alive {}", component);
-            self._environment_manager = true;
-        } else {
-            debug!("The component is alive {}", component);
-            self._environment_manager = true;
-        }      
-    }
-
-    fn check_database_manager(&mut self) {
-        let component = "DatabaseManager";
-        debug!("Looking for {}", component);
-        let mut found = self._process.ps_find(&component); 
-        while found == system::constants::ERROR_FIND {
-            debug!("Find failed to run, retrying");
-            found = self._process.ps_find(&component);
-        }
-        if found == 0 && self._database_manager == true {
-            error!("The component was not alive {}", component);
-            self.publish_failure_component(system::constants::DATABASE_MANAGER);
-            self._database_manager = false;
-            if self.check_file("/home/simon/Documents/Deploy/logs/DBM.txt") {
-                if self.compare("/home/simon/Documents/Deploy/logs/DBM.txt", "Exception") {
-                    error!("Log file exists and a exception occured");
-                }
-            }
-        } else if found == 0 && self._database_manager != true {
-            debug!("The component is still dead {}", component);
-        } else if found >= 1 && self._database_manager == false {
-            warn!("The component is now alive {}", component);
-            self._database_manager = true;
-        } else {
-            debug!("The component is alive {}", component);
-            self._database_manager = true;
-        }      
     }
 
     fn check_sql(&mut self) {
@@ -362,25 +289,12 @@ impl Control {
         }
     }
 
-    fn send_event(&mut self, message: &rabbitmq::types::EventSyp) {
-        if self._event_counter > 10 {
-            debug!("Publishing a event message about: {}", message.event_type_id);
-            let serialized = serde_json::to_string(&message).unwrap();
-            self._channel.publish(rabbitmq::types::EVENT_SYP, &serialized);
-            self._event_counter += 1;
-        }
-    }
-
     pub fn get_shutdown(&mut self) -> bool {
         return self._shutdown;
     }
 
     pub fn set_shutdown(&mut self) {
         self._shutdown = true;
-    }
-
-    pub fn get_event_counter(&mut self) -> u32 {
-        return self._event_counter;
     }
 
     pub fn control_loop(&mut self) {
@@ -393,8 +307,6 @@ impl Control {
             self.check_rabbitmq();
             self.check_fault_handler();
             self.check_sql();
-            self.check_database_manager();
-            self.check_environment_manager();
             self.check_network_access_controller();
             self.check_camera_monitor();
             self.check_user_panel();
@@ -412,7 +324,7 @@ fn main() {
     }
 
     App::new("exeSystemProcessor")
-        .version("1.2.0")
+        .version("1.3.0")
         .about("The hearbeat and monitor for HouseGuard.");
 
     let mut control = Control::new();
