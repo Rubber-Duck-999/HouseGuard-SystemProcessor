@@ -33,8 +33,6 @@ struct Control {
     _user_panel: bool,
     _fault_handler: bool,
     _camera_monitor: bool,
-    _start_camera_monitor: bool,
-    _kill_camera_monitor: bool,
     _network_access_controller: bool,
     _sql: bool,
     _rabbitmq: bool,
@@ -54,8 +52,6 @@ impl Control {
             _user_panel: true,
             _fault_handler: true,
             _camera_monitor: true,
-            _start_camera_monitor: false,
-            _kill_camera_monitor: false,
             _network_access_controller: true,
             _sql: true,
             _rabbitmq: true,
@@ -161,20 +157,10 @@ impl Control {
             self.publish_failure_component(system::constants::CAMERA_MONITOR);
             self._camera_monitor = false;
         } else if found == 0 && self._camera_monitor != true {
-            if self._start_camera_monitor == true {
-                self._process.start_cm();
-            } else {
-                debug!("The component is still dead {}", component);
-            }
+            debug!("The component is still dead {}", component);
         } else if found >= 1 && self._camera_monitor == false {
             warn!("The component is now alive {}", component);
             self._camera_monitor = true;
-            if self._kill_camera_monitor == true {
-                if self._process.kill_cm(&component) {
-                    self._camera_monitor = false;
-                    self.publish_failure_component(system::constants::CAMERA_MONITOR);
-                }
-            }
         } else {
             self._camera_monitor = true;
         }      
@@ -276,32 +262,12 @@ impl Control {
 
     fn check_messages(&mut self) {
         let x:rabbitmq::interaction::MessagePower = self._channel.consume_get();
-        if x._count == 0 || x._component != rabbitmq::types::CAMERA_MONITOR {
-            self._start_camera_monitor = false;
-            self._kill_camera_monitor = false;
-            return;
-        }
-
-        if x._state == rabbitmq::types::POWER_ON {
-            self._start_camera_monitor = true;
-        } else if x._state == rabbitmq::types::POWER_OFF {
-            self._kill_camera_monitor = true;
-        }
-    }
-
-    pub fn get_shutdown(&mut self) -> bool {
-        return self._shutdown;
-    }
-
-    pub fn set_shutdown(&mut self) {
-        self._shutdown = true;
     }
 
     pub fn control_loop(&mut self) {
         trace!("Declaring consumer...");
         self._channel.consume();
         thread::sleep(time::Duration::from_secs(60));
-        self._start_camera_monitor = true;
         while self._shutdown != true {
             self.check_messages();
             self.check_rabbitmq();
