@@ -20,9 +20,9 @@ use crate::system::constants;
 use std::process::Command;
 
 pub struct DiskHw {
-    pub _percentage_usage: f32,
+    pub _percentage_usage: u32,
     pub _memory_left: u64,
-    pub _temperature: f32,
+    pub _temperature: u32,
 }
 
 pub struct Processes {
@@ -125,14 +125,14 @@ impl Processes {
     pub fn get_disk_usage(&mut self) -> DiskHw {
         let disk_usage = disk::disk_usage("/").unwrap();
         debug!("Disk usage: {:?}", disk_usage);
-        let percentage = disk_usage.percent();
+        let percentage = disk_usage.percent() as u32;
         debug!("Disk usage %: {:?}", percentage);
         //
         let sys = System::new();
         //
-        let mut temperatures = 0.0;
+        let mut temperature = 0;
         match sys.cpu_temp() {
-            Ok(cpu_temp) => temperatures = cpu_temp,
+            Ok(cpu_temp) => temperature = cpu_temp as u32,
             Err(x) => error!("CPU temp: {}", x)
         }   
         //
@@ -147,7 +147,7 @@ impl Processes {
         let temp = DiskHw {
             _percentage_usage: percentage,
             _memory_left: memory_left,
-            _temperature: temperatures,
+            _temperature: temperature,
         };
         return temp;
     }

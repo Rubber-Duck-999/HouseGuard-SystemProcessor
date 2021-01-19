@@ -36,8 +36,8 @@ struct Control {
     _network_access_controller: bool,
     _sql: bool,
     _rabbitmq: bool,
-    _highest_disk_usage: f32,
-    _temperature: f32,
+    _highest_disk_usage: u32,
+    _temperature: u32,
     _memory_left: u64,
 }
 
@@ -55,8 +55,8 @@ impl Control {
             _network_access_controller: true,
             _sql: true,
             _rabbitmq: true,
-            _highest_disk_usage: 0.0,
-            _temperature: 0.0,
+            _highest_disk_usage: 0,
+            _temperature: 0,
             _memory_left: 0,
         }
     }
@@ -64,8 +64,10 @@ impl Control {
     fn get_status_update(&mut self) {
         let disk:system::processes::DiskHw = self._process.get_disk_usage();
         let mut updated = false;
-        if self._temperature > disk._temperature {
-            self._temperature = disk._temperature;
+        debug!("Temperature {}", disk._temperature);
+        debug!("Temperature {}", self._temperature);
+        if self._temperature != disk._temperature {
+            self._temperature = disk._temperature as u32;
             updated = true;
         }
         if self._memory_left < disk._memory_left {
@@ -75,7 +77,7 @@ impl Control {
         debug!("Current disk usage {}", disk._percentage_usage);
         if disk._percentage_usage > self._highest_disk_usage {
             warn!("Setting new disk usage");
-            self._highest_disk_usage = disk._percentage_usage;
+            self._highest_disk_usage = disk._percentage_usage as u32;
         }
         if updated {
             let status = rabbitmq::types::StatusSYP {
@@ -84,6 +86,7 @@ impl Control {
                 highest_usage: self._highest_disk_usage,
             };
             let serialized = serde_json::to_string(&status).unwrap();
+            debug!("Message: {}", serialized);
             self._channel.publish(rabbitmq::types::STATUS_SYP, &serialized);
         }
     }
@@ -181,10 +184,11 @@ impl Control {
                 if self._fault_handler == true {
                     self._fault_handler = false;
                     error!("Fault handler is not alive, we should restart the system");
+                    /*
                     match system_shutdown::reboot() {
                         Ok(_) => println!("Rebooting ..."),
                         Err(error) => eprintln!("Failed to reboot: {}", error),
-                    }
+                    }*/
                 } else if self._fault_handler == false {
                     debug!("Fault Handler is still dead");
                 }

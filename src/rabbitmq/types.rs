@@ -37,7 +37,7 @@ pub struct FailureComponent {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StatusSYP {
-    pub temperature: f32,
+    pub temperature: u32,
     pub memory_left: u64,
-    pub highest_usage: f32,
+    pub highest_usage: u32,
 }
