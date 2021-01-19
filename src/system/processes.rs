@@ -141,6 +141,9 @@ impl Processes {
             Ok(mem) => memory_left = mem.free.as_u64(),
             Err(x) => println!("\nMemory: error: {}", x)
         }
+        for i in 1..3 {
+            memory_left = memory_left / 1024;
+        }
         let temp = DiskHw {
             _percentage_usage: percentage,
             _memory_left: memory_left,
