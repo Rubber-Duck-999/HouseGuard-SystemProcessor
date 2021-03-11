@@ -4,6 +4,10 @@ pipeline {
         parallelsAlwaysFailFast()
     }
     stages {
+        stage('Check') {
+            sh "echo $PATH"
+            sh "ls $PATH"
+        }
         stage('Env') {
           steps {
             sh "cargo -V"
