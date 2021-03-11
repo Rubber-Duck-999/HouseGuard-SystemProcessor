@@ -7,7 +7,7 @@ pipeline {
         stage('Check') {
             steps {
                 sh "echo $PATH"
-                sh "ls $PATH"
+                sh "ls /home/pi/.cargo/bin/"
             }
         }
         stage('Env') {
