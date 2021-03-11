@@ -5,8 +5,10 @@ pipeline {
     }
     stages {
         stage('Check') {
-            sh "echo $PATH"
-            sh "ls $PATH"
+            steps {
+                sh "echo $PATH"
+                sh "ls $PATH"
+            }
         }
         stage('Env') {
           steps {
