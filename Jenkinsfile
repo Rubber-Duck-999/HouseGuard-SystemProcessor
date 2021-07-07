@@ -4,11 +4,17 @@ pipeline {
         parallelsAlwaysFailFast()
     }
     stages {
+        stage('Check') {
+            steps {
+                sh "echo $PATH"
+                sh "ls /home/pi/.cargo/bin/"
+            }
+        }
         stage('Env') {
           steps {
+            sh "echo $PATH"
             sh "cargo -V"
             sh "rustc -V"
-            sh "echo $PATH"
           }
         }
         stage('Build') {
