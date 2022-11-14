@@ -1,5 +1,3 @@
-use clap::App;
-
 use std::process;
 
 #[macro_use]
@@ -14,10 +12,6 @@ fn main() {
     if log_enabled!(Level::Trace) {
         info!("Logging has been enabled to trace");
     }
-
-    App::new("exeSystemProcessor")
-        .version("3.0.0")
-        .about("The hearbeat and monitor for HouseGuard.");
 
     process::exit(0);
 }
