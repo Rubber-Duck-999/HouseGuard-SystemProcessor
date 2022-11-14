@@ -16,7 +16,7 @@ fn main() {
     }
 
     App::new("exeSystemProcessor")
-        .version("1.4.0")
+        .version("3.0.0")
         .about("The hearbeat and monitor for HouseGuard.");
 
     process::exit(0);
